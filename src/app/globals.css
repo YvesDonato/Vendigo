@@ -1,0 +1,114 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  background: #ffffff;
+  color: #17202a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #ffffff;
+  font-family: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Nunito", system-ui, sans-serif;
+  letter-spacing: 0.005em;
+}
+
+button,
+textarea {
+  font: inherit;
+}
+
+.plastic-button {
+  border: 1px solid rgba(3, 105, 161, 0.22);
+  background: linear-gradient(180deg, #8ed8ff 0%, #38bdf8 48%, #0ea5e9 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    inset 0 9px 10px -9px rgba(255, 255, 255, 0.9),
+    inset 0 -1px 1px rgba(3, 105, 161, 0.22);
+  color: white;
+  transition:
+    background 120ms ease,
+    box-shadow 120ms ease,
+    transform 100ms ease,
+    opacity 120ms ease;
+}
+
+@media (hover: hover) {
+  .plastic-button:hover:not(:disabled) {
+    background: linear-gradient(180deg, #a9e3ff 0%, #4fc7fb 48%, #17a9e9 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 9px 10px -9px rgba(255, 255, 255, 0.95),
+      inset 0 -1px 1px rgba(3, 105, 161, 0.2);
+  }
+}
+
+.plastic-button:active:not(:disabled) {
+  transform: translateY(1px);
+  background: linear-gradient(180deg, #0ea5e9 0%, #38bdf8 100%);
+  box-shadow:
+    inset 0 2px 4px rgba(3, 105, 161, 0.25),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.chat-bubble {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 1px rgba(15, 23, 42, 0.1),
+    0 2px 0 rgba(15, 23, 42, 0.1),
+    1px 4px 6px -4px rgba(15, 23, 42, 0.3);
+}
+
+.chat-bubble-user {
+  border: 1px solid rgba(3, 105, 161, 0.2);
+  background: linear-gradient(180deg, #60c9fa 0%, #38bdf8 48%, #16a9e7 100%);
+}
+
+.chat-bubble-agent {
+  border: 1px solid rgba(14, 165, 233, 0.14);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 58%, #eef8ff 100%);
+}
+
+.raised-surface {
+  border: 1px solid rgba(14, 165, 233, 0.16);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 58%, #edf8ff 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 1px rgba(15, 23, 42, 0.08),
+    0 2px 0 rgba(15, 23, 42, 0.08),
+    1px 4px 6px -4px rgba(15, 23, 42, 0.26);
+}
+
+.voice-button {
+  border: 1px solid rgba(14, 165, 233, 0.2);
+  background: linear-gradient(180deg, #ffffff 0%, #f5fbff 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 1px 2px rgba(15, 23, 42, 0.08);
+  color: #0284c7;
+  transition: transform 100ms ease, background 120ms ease, color 120ms ease;
+}
+
+.voice-button:active {
+  transform: translateY(1px);
+}
+
+.voice-button-active {
+  background: linear-gradient(180deg, #38bdf8 0%, #0ea5e9 100%);
+  color: white;
+}
+
+.voice-status {
+  border: 1px solid rgba(14, 165, 233, 0.18);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+}
