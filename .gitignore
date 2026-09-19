@@ -5,3 +5,5 @@ node_modules/
 npm-debug.log*
 *.tsbuildinfo
 .DS_Store
+playwright-report/
+test-results/

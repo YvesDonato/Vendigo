@@ -1,31 +1,42 @@
 {
-  "name": "openclaw-irl",
+  "name": "hawk-2-u",
+  "description": "Hawk-2-U — Commerce that comes to you. An autonomous mobile storefront and live operations dashboard.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ericpungholee/Hawk-2-U.git"
+  },
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
-    "voice": "node voice-server/server.mts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "node --experimental-strip-types --test tests/backend.test.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@elevenlabs/elevenlabs-js": "^2.68.0",
-    "@elevenlabs/react": "^1.15.2",
-    "next": "latest",
-    "openai": "latest",
-    "react": "latest",
-    "react-dom": "latest"
+    "@fontsource-variable/dm-sans": "^5.3.0",
+    "@fontsource-variable/manrope": "^5.3.0",
+    "lucide-react": "^1.47.0",
+    "next": "16.3.5",
+    "qrcode": "^1.5.4",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "latest",
-    "@types/node": "latest",
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
-    "eslint": "latest",
-    "eslint-config-next": "latest",
-    "tailwindcss": "latest",
-    "typescript": "latest"
+    "@playwright/test": "^1.63.0",
+    "@types/node": "26.6.2",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.5",
+    "typescript": "6.0.3"
+  },
+  "engines": {
+    "node": ">=22.18.0"
   }
 }

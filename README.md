@@ -1,42 +1,171 @@
-# OpenClaw IRL
+# Hawk-2-U
 
-OpenClaw uses one GPT-5.6 Luna agent for typed and spoken conversations. ElevenLabs Speech Engine provides microphone capture, transcription, turn-taking, interruption handling, and speech playback.
+**Commerce that comes to you.**
 
-Requires Node.js 22.18 or newer.
+Hawk-2-U is an autonomous mobile storefront for crowded events. A small robot brings cold drinks and snacks to the crowd. Customers scan its QR code, pick one item, approve a simulated payment, and collect it from an unlocked compartment. Operators see inventory, sales, venue demand, robot controls, and an onboard camera in one live dashboard.
 
-1. Install dependencies and copy the environment template:
+## Run locally
 
-```bash
-npm install
-cp .env.example .env.local
-```
-
-2. Set the required values in `.env.local`:
+Requires Node.js **22.18+** and npm.
 
 ```bash
-OPENAI_API_KEY=
-ELEVENLABS_API_KEY=
-ELEVENLABS_SPEECH_ENGINE_ID=
-```
-
-3. In three terminals, start the app, voice server, and tunnel:
-
-```bash
+npm ci
 npm run dev
 ```
 
-```bash
-npm run voice
-```
+No accounts, API keys, payment provider, or database are required. Optional configuration is documented in [.env.example](.env.example); put your values in `.env.local`.
+
+- Customer storefront: **http://localhost:3000/shop/robot-001**
+- Operator dashboard: **http://localhost:3000/dashboard**
+- `/` opens the default robot’s storefront.
+
+For a production demo:
 
 ```bash
-ngrok http 3001
+npm run build
+npm start
 ```
 
-In the ElevenLabs Speech Engine resource, set the upstream WebSocket URL to:
+### Scanning from a phone
+
+Run the app on a computer connected to the same reachable Wi-Fi network as the phone. Open the dashboard using the computer’s LAN address, such as `http://192.168.1.42:3000/dashboard`, and select **Robot QR**. Download the PNG and attach it to the robot. The QR points to the same origin at `/shop/robot-001`.
+
+Alternatively, set `NEXT_PUBLIC_SHOP_ORIGIN=http://192.168.1.42:3000` before starting development or **before building** production. A QR containing `localhost` only works on the computer itself. The QR dialog calls this out. All fonts, icons, and product illustrations are bundled locally.
+
+## The demo
+
+1. Keep `/dashboard` open on a laptop.
+2. Scan the QR with a phone, or open `/shop/robot-001` in another browser.
+3. Choose **Coca-Cola → Get Item → Confirm**.
+4. Demo payment processing takes 750 ms, followed by **Payment Approved**.
+5. The server acknowledges the unlock; the customer sees **Compartment unlocked**, **Take your Coca-Cola**, and a ten-second countdown.
+6. After ten seconds, the **server** relocks the compartment, deducts one unit, and records the sale.
+7. Revenue, units sold, conversion, inventory, recent sales, and location totals update in all open dashboards without refreshing.
+
+Closing or refreshing the customer’s tab does not cancel the relock timer. Refreshing during a pickup restores the active order. A repeated request reuses the order ID and cannot record a second sale. Only one compartment per robot can be active at a time.
+
+The demo starts with **$184.50 CAD revenue, 97 units sold, 143 scans, 67.8% conversion, and 34 items on board**. These numbers are derived from seed transaction rows and inventory records. Conversion measures unique purchasing sessions divided by scanned sessions; repeat purchases in one session increase units and revenue without counting another converted session. One scan is counted per robot per browser-tab session.
+
+**Stop**, **Resume**, **Return to Base**, and operator **Unlock Compartment** use the shared backend. A manual unlock automatically relocks without creating a purchase or reducing stock. Movement commands are blocked while a compartment is open. A stop takes priority over an in-flight resume. Failed locks stop the robot, keep the compartment reserved, and expose **Retry lock** to the operator.
+
+## Architecture
+
+Next.js 16 App Router, React, TypeScript, plain CSS, and one in-memory Node.js store. No separate backend service is needed.
 
 ```text
-wss://YOUR_PUBLIC_VOICE_SERVER/ws
+src/
+  app/
+    shop/[robotId]/          Customer route, resolves the QR's robot ID
+    dashboard/              Operator route
+    api/
+      state/                Snapshot + polling fallback
+      events/               Server-sent event stream
+      scans/                Idempotent scan registration
+      orders/[orderId]/      Order recovery and pickup status
+      robot/unlock/         Customer purchase/unlock
+      robot/command/        Operator controls
+      camera/               MJPEG proxy and configuration status
+  components/
+    storefront/             Catalog and purchase dialog
+    dashboard/              Metrics, inventory, venue, sales, QR
+    robot/                  Robot status and controls
+    camera/                 Isolated live camera viewer
+  hooks/use-live-state.ts   Live snapshots with polling fallback
+  lib/
+    demo-data.ts            One consistent event seed
+    server/store.ts         Inventory, orders, timers, transactions
+    server/runtime.ts       Process-wide store shared by route handlers
+    robot/hardware.ts       Replaceable physical vehicle adapter
+    camera/config.ts        Server-only camera URL configuration
+  types/                    Robot, Product, InventoryItem, Transaction,
+                            VenueLocation, RobotCommand, and shared state
+public/
+  products/                 Replaceable local SVG product illustrations
+  robot.svg                 Hawk illustration
+camera_code/                Original ESP32 firmware, preserved unchanged
+tests/                      Backend and browser verification
 ```
 
-The browser receives only a temporary WebRTC conversation token. API keys remain on the Next.js and voice servers. `VOICE_SERVER_INTERNAL_URL` and `VOICE_SERVER_PORT` are optional when both run locally with the defaults.
+The store publishes a complete snapshot after mutations. Both interfaces subscribe to `/api/events`; a three-second polling fallback keeps data moving when a proxy does not support event streams. Hardware acknowledgements control the order state. Money is stored as integer cents. Revenue charts, location performance, and the sales feed are derived from the same transaction collection.
+
+**Run one long-lived Node.js process for this prototype.** State resets to seed data when the server restarts. It is intentionally not durable and should not be deployed across multiple serverless workers or instances. Timers survive browser disconnects, not process shutdowns. Before controlling real hardware, the robot must enforce its own physical auto-lock watchdog. The current app has no authentication and is intended for a trusted demo environment.
+
+Venue demand is explicitly a seeded venue model, not a crowd-sensing system. Recommendations rank high-demand zones by actual sales. Robot movement and battery telemetry are simulated; camera status reflects the connected feed. Robot IDs are carried through inventory, orders, hardware calls, and transactions. To add another demo robot, add its robot and inventory records to the seed; `/shop/[robotId]` already supports it. The dashboard focuses on the first robot while event metrics aggregate all transactions.
+
+## Robot hardware integration
+
+Replace `simulatedHardware` in [src/lib/robot/hardware.ts](src/lib/robot/hardware.ts) with your vehicle HTTP or WebSocket calls:
+
+```ts
+unlockCompartment(robotId, compartmentId)
+lockCompartment(robotId, compartmentId)
+stopRobot(robotId)
+resumeRobot(robotId)
+returnToBase(robotId)
+```
+
+Resolve a call only after the vehicle acknowledges it, and reject on errors or timeouts. Keep inventory, arbitration, and the order lifecycle in the store. Payment is always simulated; there is no Stripe integration and no charge is made.
+
+The customer endpoint accepts:
+
+```http
+POST /api/robot/unlock
+Content-Type: application/json
+
+{
+  "robotId": "robot-001",
+  "productId": "coke",
+  "compartmentId": 1,
+  "orderId": "a-unique-order-id",
+  "sessionId": "a-browser-session-id"
+}
+```
+
+`orderId` is the idempotency key; retries must preserve it and the other fields. Product-to-compartment mappings, availability, and stock are validated by the server. The response contains the order status and the absolute `closesAt` deadline. Relocking is server-owned and does not require a browser request.
+
+Operator commands use `POST /api/robot/command` with `robotId` and `command`: `stop`, `resume`, `return-to-base`, `unlock`, or `retry-lock`. `unlock` additionally requires `compartmentId`.
+
+## Camera integration
+
+The original camera implementation is preserved **byte for byte** in `camera_code/CameraWebServer_htn/`:
+
+| File | Preserved functionality |
+| --- | --- |
+| `CameraWebServer_htn.ino` | ESP32 camera initialization, Wi-Fi, sensor and PSRAM setup; active AI Thinker pin selection |
+| `app_httpd.cpp` | Camera HTTP endpoints, JPEG capture, controls, MJPEG streaming, and LED handling |
+| `camera_pins.h` | All existing board pin mappings |
+| `board_config.h` | Original alternative board configuration |
+| `camera_index.h` | Embedded camera control web UI |
+| `partitions.csv` | Firmware partition configuration |
+| `ci.yml` | Existing ESP32 build matrix |
+
+No camera hooks, React components, web API routes, or npm dependencies existed in the original application. The camera runs independently using the ESP32 Arduino camera/Wi-Fi libraries; the rebuild does not change its firmware dependencies or configuration.
+
+The firmware exposes its native control UI on port **80** and its MJPEG stream at **`http://CAMERA_IP:81/stream`**. Read the device’s IP from its existing serial output, and configure:
+
+```dotenv
+CAMERA_STREAM_URL=http://192.168.1.123:81/stream
+```
+
+Restart the app after setting the variable. **Live Robot Camera** uses a native MJPEG image element and proxies the stream through `/api/camera/stream`. The proxy preserves the multipart content type and frame bytes. Only the server-configured destination is accepted. A same-origin proxy avoids browser CORS and mixed-content problems; the **Next.js server** must still be able to reach the camera’s network.
+
+Without a configured camera, or when the stream fails, the dashboard shows a proper offline panel and **Reconnect camera**. It never substitutes a fake live feed. Camera status in the robot card follows the viewer. The camera code is checked against pre-rebuild SHA-256 hashes in the backend tests. Browser tests use an actual multipart JPEG fixture to verify the proxy, online state, offline behavior, and reconnect; physical hardware still needs an on-venue check.
+
+## Verification
+
+```bash
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npx playwright install chromium
+npm run test:e2e
+```
+
+Browser tests start production instances on ports **3100/3101**, plus an isolated MJPEG fixture on **3102**, and shut them down afterward. They verify phone/desktop layouts, a purchase across separate browser sessions, page-reload recovery, tab-disconnect relocking, all related metrics, robot controls, manual unlocks, QR generation, invalid API requests, unknown robots, and camera reconnects. Screenshots are written to the ignored `test-results/` directory.
+
+## GitHub project name
+
+The package, metadata, page titles, docs, and branding use **Hawk-2-U** (`hawk-2-u` for the npm package name). The GitHub repository has been renamed to [ericpungholee/Hawk-2-U](https://github.com/ericpungholee/Hawk-2-U), and this checkout’s `origin` now points to `git@github.com:ericpungholee/Hawk-2-U.git`.
+
+The active checkout directory keeps its existing filesystem path so the open workspace remains usable. It can be renamed to `Hawk-2-U` after stopping the running app and leaving the directory.
