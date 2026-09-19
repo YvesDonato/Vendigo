@@ -76,43 +76,16 @@ button, a, input, summary { -webkit-tap-highlight-color: transparent; }
 .header-side { display: flex; align-items: center; }
 .header-side-right { justify-content: flex-end; }
 
-.wordmark {
-  font-size: 13px;
-  font-weight: 760;
-  letter-spacing: .14em;
+.autodash-wordmark {
+  color: #152631;
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 22px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: -.025em;
+  line-height: 1;
   text-decoration: none;
 }
-
-.brand-mark {
-  position: relative;
-  width: 32px;
-  height: 32px;
-  border-radius: 11px;
-  background: linear-gradient(145deg, #61c7f5 0%, #168bc8 78%);
-  box-shadow: inset 1px 1px 1px rgba(255,255,255,.45), inset -1px -2px 3px rgba(4,78,119,.35), 0 6px 10px -6px rgba(13,104,151,.65);
-}
-
-.brand-mark span {
-  position: absolute;
-  left: 9px;
-  top: 8px;
-  width: 5px;
-  height: 16px;
-  border-radius: 4px;
-  background: #fff;
-  box-shadow: 8px 0 0 #fff;
-}
-
-.brand-mark span:last-child {
-  left: 13px;
-  top: 10px;
-  width: 7px;
-  height: 5px;
-  transform: none;
-  box-shadow: none;
-}
-
-.header-radio { color: #258fc7; }
 
 .step-label {
   font-size: 12px;
@@ -155,9 +128,10 @@ button, a, input, summary { -webkit-tap-highlight-color: transparent; }
 }
 
 .page-content { padding: 20px var(--page-padding) 48px; }
+.catalog-page { padding-top: 6px; }
 
 .page-intro { margin: 12px 0 28px; }
-.catalog-intro { margin-top: 20px; }
+.catalog-intro { margin-top: 4px; }
 .compact-intro { margin-bottom: 26px; }
 
 .page-intro h1,
