@@ -1,5 +1,5 @@
-import { Chat } from "@/components/Chat";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return <Chat />;
+  redirect("/shop/robot-001");
 }
