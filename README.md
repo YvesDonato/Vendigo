@@ -2,7 +2,7 @@
 
 **Commerce that comes to you.**
 
-Hawk-2-U is an autonomous mobile storefront for crowded events. A small robot brings cold drinks and snacks to the crowd. Customers scan its QR code, pick one item, approve a simulated payment, and collect it from an unlocked compartment. Operators see inventory, sales, venue demand, robot controls, and an onboard camera in one live dashboard.
+Hawk-2-U is an autonomous mobile storefront for crowded events. A small robot brings cold drinks and snacks to the crowd. Customers scan its QR code, pick one free item, confirm, and collect it from an unlocked compartment. Operators see inventory, pickup activity, robot controls, and an onboard camera in one live dashboard. The mobile-first interface uses white and sky blue without shadows, decorative badges, location labels, or fleet numbers.
 
 ## Run locally
 
@@ -37,14 +37,14 @@ Alternatively, set `NEXT_PUBLIC_SHOP_ORIGIN=http://192.168.1.42:3000` before sta
 1. Keep `/dashboard` open on a laptop.
 2. Scan the QR with a phone, or open `/shop/robot-001` in another browser.
 3. Choose **Coca-Cola → Get Item → Confirm**.
-4. Demo payment processing takes 750 ms, followed by **Payment Approved**.
+4. All items are **Free**. Confirmation goes straight to unlocking, with no payment step.
 5. The server acknowledges the unlock; the customer sees **Compartment unlocked**, **Take your Coca-Cola**, and a ten-second countdown.
 6. After ten seconds, the **server** relocks the compartment, deducts one unit, and records the sale.
-7. Revenue, units sold, conversion, inventory, recent sales, and location totals update in all open dashboards without refreshing.
+7. Units sold, conversion, inventory, and recent sales update in all open dashboards without refreshing. Free pickups record zero-value transactions, so revenue stays at $0.00.
 
 Closing or refreshing the customer’s tab does not cancel the relock timer. Refreshing during a pickup restores the active order. A repeated request reuses the order ID and cannot record a second sale. Only one compartment per robot can be active at a time.
 
-The demo starts with **$184.50 CAD revenue, 97 units sold, 143 scans, 67.8% conversion, and 34 items on board**. These numbers are derived from seed transaction rows and inventory records. Conversion measures unique purchasing sessions divided by scanned sessions; repeat purchases in one session increase units and revenue without counting another converted session. One scan is counted per robot per browser-tab session.
+The demo starts with **$0.00 CAD revenue, 97 free pickups, 143 scans, 67.8% conversion, and 34 items on board**. These numbers are derived from seed transaction rows and inventory records. Conversion measures unique pickup sessions divided by scanned sessions; repeat pickups in one session increase units without counting another converted session. One scan is counted per robot per browser-tab session.
 
 **Stop**, **Resume**, **Return to Base**, and operator **Unlock Compartment** use the shared backend. A manual unlock automatically relocks without creating a purchase or reducing stock. Movement commands are blocked while a compartment is open. A stop takes priority over an in-flight resume. Failed locks stop the robot, keep the compartment reserved, and expose **Retry lock** to the operator.
 
@@ -67,7 +67,7 @@ src/
       camera/               MJPEG proxy and configuration status
   components/
     storefront/             Catalog and purchase dialog
-    dashboard/              Metrics, inventory, venue, sales, QR
+    dashboard/              Metrics, inventory, sales, QR
     robot/                  Robot status and controls
     camera/                 Isolated live camera viewer
   hooks/use-live-state.ts   Live snapshots with polling fallback
@@ -86,11 +86,11 @@ camera_code/                Original ESP32 firmware, preserved unchanged
 tests/                      Backend and browser verification
 ```
 
-The store publishes a complete snapshot after mutations. Both interfaces subscribe to `/api/events`; a three-second polling fallback keeps data moving when a proxy does not support event streams. Hardware acknowledgements control the order state. Money is stored as integer cents. Revenue charts, location performance, and the sales feed are derived from the same transaction collection.
+The store publishes a complete snapshot after mutations. Both interfaces subscribe to `/api/events`; a three-second polling fallback keeps data moving when a proxy does not support event streams. Hardware acknowledgements control the order state. Money is stored as integer cents; all catalog prices are zero. Revenue charts and the sales feed are derived from the same transaction collection.
 
 **Run one long-lived Node.js process for this prototype.** State resets to seed data when the server restarts. It is intentionally not durable and should not be deployed across multiple serverless workers or instances. Timers survive browser disconnects, not process shutdowns. Before controlling real hardware, the robot must enforce its own physical auto-lock watchdog. The current app has no authentication and is intended for a trusted demo environment.
 
-Venue demand is explicitly a seeded venue model, not a crowd-sensing system. Recommendations rank high-demand zones by actual sales. Robot movement and battery telemetry are simulated; camera status reflects the connected feed. Robot IDs are carried through inventory, orders, hardware calls, and transactions. To add another demo robot, add its robot and inventory records to the seed; `/shop/[robotId]` already supports it. The dashboard focuses on the first robot while event metrics aggregate all transactions.
+Robot movement and battery telemetry are simulated; camera status reflects the connected feed. Robot IDs and location data remain internal to inventory, orders, hardware calls, and transactions, but locations and fleet numbers are not displayed in the UI. To add another demo robot, add its robot and inventory records to the seed; `/shop/[robotId]` already supports it. The dashboard focuses on the first robot while event metrics aggregate all transactions.
 
 ## Robot hardware integration
 
@@ -104,7 +104,7 @@ resumeRobot(robotId)
 returnToBase(robotId)
 ```
 
-Resolve a call only after the vehicle acknowledges it, and reject on errors or timeouts. Keep inventory, arbitration, and the order lifecycle in the store. Payment is always simulated; there is no Stripe integration and no charge is made.
+Resolve a call only after the vehicle acknowledges it, and reject on errors or timeouts. Keep inventory, arbitration, and the order lifecycle in the store. All products are free; there is no payment step, Stripe integration, or charge.
 
 The customer endpoint accepts:
 

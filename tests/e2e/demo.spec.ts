@@ -10,22 +10,26 @@ test("mobile purchase relocks and immediately updates a separate dashboard sessi
   shop.on("pageerror", (error) => errors.push(error.message));
   dashboard.on("pageerror", (error) => errors.push(error.message));
   await dashboard.goto("/dashboard");
-  await expect(dashboard.getByRole("heading", { name: "Good things are moving." })).toBeVisible();
-  await expect(dashboard.getByText("Waiting for a little perspective")).toBeVisible();
+  await expect(dashboard.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible();
+  await expect(dashboard.getByText("Camera offline", { exact: true })).toBeVisible();
   const before: AppSnapshot = await (await request.get("/api/state")).json();
   await shop.goto("/shop/robot-001");
-  await expect(shop.getByRole("heading", { name: "A little break." })).toBeVisible();
+  await expect(shop.getByRole("heading", { name: "Drinks & snacks." })).toBeVisible();
+  for (const product of before.products) {
+    expect(product.priceCents).toBe(0);
+    await expect(shop.getByTestId(`product-${product.id}`).getByText("Free", { exact: true })).toBeVisible();
+  }
   await expect(dashboard.getByTestId("kpi-scans")).toHaveText(String(before.qrScans + 1));
   await shop.screenshot({ path: "test-results/storefront-mobile.png", fullPage: true });
   await dashboard.screenshot({ path: "test-results/dashboard-desktop.png", fullPage: true });
   expect(await shop.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await expect(shop.getByTestId("product-coke").getByRole("button", { name: "Get Item" })).toBeInViewport();
+  await expect(shop.getByTestId("product-coke").getByRole("button", { name: "Get Item" })).toBeInViewport({ ratio: 1 });
   expect(await dashboard.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
   await shop.getByTestId("product-coke").getByRole("button", { name: "Get Item" }).click();
   await expect(shop.getByRole("dialog")).toBeVisible();
+  await expect(shop.getByRole("dialog").getByText("Free", { exact: true })).toBeVisible();
   await shop.getByRole("button", { name: "Confirm" }).click();
-  await expect(shop.getByText("Payment Approved", { exact: true })).toBeVisible();
   await expect(shop.getByRole("heading", { name: "Compartment unlocked" })).toBeVisible();
   await expect(shop.getByText("Take your Coca-Cola", { exact: true })).toBeVisible();
   await expect(dashboard.getByTestId("compartment-state")).toContainText("unlocked");
@@ -37,17 +41,18 @@ test("mobile purchase relocks and immediately updates a separate dashboard sessi
   await shop.reload();
   await expect(shop.getByRole("heading", { name: "Compartment unlocked" })).toBeVisible();
   await expect(shop.getByRole("dialog")).toBeHidden({ timeout: 16_000 });
-  await expect(shop.getByText("All yours. Thanks for stopping by!")).toBeVisible();
+  await expect(shop.getByText("Pickup complete. Enjoy!")).toBeVisible();
   await expect(dashboard.getByTestId("kpi-units")).toHaveText(String(before.transactions.length + 1));
   await expect(dashboard.getByTestId("compartment-state")).toContainText("All compartments locked");
   const after: AppSnapshot = await (await request.get("/api/state")).json();
-  const revenue = before.transactions.reduce((sum, sale) => sum + sale.amountCents, 0) + 200;
+  const revenue = before.transactions.reduce((sum, sale) => sum + sale.amountCents, 0);
+  expect(after.transactions[0].amountCents).toBe(0);
   await expect(dashboard.getByTestId("kpi-revenue")).toHaveText(`$${(revenue / 100).toFixed(2)}`);
   await expect(dashboard.getByTestId(`sale-${after.transactions[0].id}`)).toContainText("Coca-Cola");
-  await expect(dashboard.getByTestId("location-sales-hacking")).toHaveText(String(before.transactions.filter((t) => t.locationId === "hacking").length + 1));
+  await expect(dashboard.getByTestId(`sale-${after.transactions[0].id}`)).toContainText("Free");
   await expect(dashboard.getByTestId("kpi-conversion")).toHaveText(`${(after.purchasingSessions / after.qrScans * 100).toFixed(1)}%`);
   expect(after.inventory[0].stock).toBe(before.inventory[0].stock - 1);
-  await expect(shop.getByTestId("product-coke")).toContainText(`${after.inventory[0].stock} available`);
+  await expect(shop.getByTestId("product-coke")).toContainText(`${after.inventory[0].stock} left`);
   expect(errors).toEqual([]);
   await customer.close(); await operator.close();
 });
@@ -55,15 +60,15 @@ test("mobile purchase relocks and immediately updates a separate dashboard sessi
 test("robot controls change the shared storefront state and manual unlock auto-relocks", async ({ page, request }) => {
   await page.goto("/dashboard");
   await page.getByRole("button", { name: "Stop", exact: true }).click();
-  await expect(page.getByText("Hawk is safely stopped.")).toBeVisible();
+  await expect(page.getByText("Hawk stopped.")).toBeVisible();
   const shop = await page.context().newPage();
   await shop.goto("/shop/robot-001");
-  await expect(shop.getByText("Taking a quick pause")).toBeVisible();
+  await expect(shop.getByText("Purchases are paused by the operator.")).toBeVisible();
   await expect(shop.getByTestId("product-coke").getByRole("button")).toBeDisabled();
   await page.getByRole("button", { name: "Resume", exact: true }).click();
   await expect(shop.getByTestId("product-coke").getByRole("button")).toBeEnabled();
   await page.getByRole("button", { name: "Return to Base", exact: true }).click();
-  await expect(shop.getByText("Heading back to base")).toBeVisible();
+  await expect(shop.getByText("Hawk is returning to base. Purchases are paused.")).toBeVisible();
   await page.getByRole("button", { name: "Resume", exact: true }).click();
   const before: AppSnapshot = await (await request.get("/api/state")).json();
   await page.getByRole("combobox", { name: "Compartment to unlock" }).selectOption("3");
@@ -109,11 +114,11 @@ test("API rejects malformed requests and unknown robots; camera has a working of
   expect(camera.status()).toBe(503);
   const missing = await page.goto("/shop/robot-missing");
   expect(missing?.status()).toBe(404);
-  await expect(page.getByRole("heading", { name: "This Hawk hasn’t landed yet." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Storefront not found" })).toBeVisible();
   await page.goto("/dashboard");
-  await expect(page.getByText("Waiting for a little perspective")).toBeVisible();
+  await expect(page.getByText("Camera offline", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Reconnect camera" }).click();
-  await expect(page.getByText("Waiting for a little perspective")).toBeVisible();
+  await expect(page.getByText("Camera offline", { exact: true })).toBeVisible();
 });
 
 test("a disconnected customer does not interrupt the server's pickup timer", async ({ browser, request }) => {

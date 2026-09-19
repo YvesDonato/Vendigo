@@ -104,7 +104,7 @@ export class DemoStore {
       this.publish();
     } catch {
       order.status = "failed";
-      order.error = "We couldn’t unlock the compartment. No payment was taken. Please try again.";
+      order.error = "We couldn’t unlock the compartment. Please try again.";
       this.busy.delete(robot.id);
       if (robot.status === "selling") robot.status = "available";
       this.publish();

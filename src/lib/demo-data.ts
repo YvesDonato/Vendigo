@@ -1,11 +1,11 @@
 import type { AppSnapshot, Product, Transaction } from "../types/index.ts";
 
 export const products: Product[] = [
-  { id: "coke", name: "Coca-Cola", description: "The original. Ice cold.", priceCents: 200, image: "/products/coke.svg", color: "#da433c", category: "drinks" },
-  { id: "coke-zero", name: "Coke Zero", description: "All the taste. Zero sugar.", priceCents: 200, image: "/products/coke-zero.svg", color: "#303334", category: "drinks" },
-  { id: "sprite", name: "Sprite", description: "A little lemon-lime lift.", priceCents: 200, image: "/products/sprite.svg", color: "#4c9364", category: "drinks" },
-  { id: "water", name: "Water", description: "A fresh start, bottled.", priceCents: 150, image: "/products/water.svg", color: "#70a3be", category: "drinks" },
-  { id: "chips", name: "Chips", description: "Your next crunchy break.", priceCents: 150, image: "/products/chips.svg", color: "#d6a44a", category: "snacks" },
+  { id: "coke", name: "Coca-Cola", description: "The original. Ice cold.", priceCents: 0, image: "/products/coke.svg", color: "#da433c", category: "drinks" },
+  { id: "coke-zero", name: "Coke Zero", description: "All the taste. Zero sugar.", priceCents: 0, image: "/products/coke-zero.svg", color: "#303334", category: "drinks" },
+  { id: "sprite", name: "Sprite", description: "A little lemon-lime lift.", priceCents: 0, image: "/products/sprite.svg", color: "#4c9364", category: "drinks" },
+  { id: "water", name: "Water", description: "A fresh start, bottled.", priceCents: 0, image: "/products/water.svg", color: "#70a3be", category: "drinks" },
+  { id: "chips", name: "Chips", description: "Your next crunchy break.", priceCents: 0, image: "/products/chips.svg", color: "#d6a44a", category: "snacks" },
 ];
 
 export function createSeed(): AppSnapshot {
@@ -16,7 +16,7 @@ export function createSeed(): AppSnapshot {
     { id: "entrance", name: "Entrance", shortName: "Entrance", demand: "medium" },
     { id: "lounge", name: "Lounge", shortName: "Lounge", demand: "low" },
   ];
-  // Real transaction rows drive every metric: 78 drinks at $2 + 19 items at $1.50.
+  // Free pickup transactions drive the metrics without adding revenue.
   const transactions: Transaction[] = Array.from({ length: 97 }, (_, i) => {
     const product = i % 5 === 4 ? products[i % 2 ? 4 : 3] : products[i % 3];
     return {

@@ -12,11 +12,13 @@ const hardware: RobotHardware = {
 };
 const input = { orderId: "test-order", robotId: "robot-001", productId: "coke", compartmentId: 1, sessionId: "test-session" };
 
-test("demo metrics are derived from 97 believable transactions", () => {
+test("all products and seeded transactions are free", () => {
   const store = new DemoStore(hardware);
   const snapshot = store.snapshot();
   assert.equal(snapshot.transactions.length, 97);
-  assert.equal(snapshot.transactions.reduce((sum, t) => sum + t.amountCents, 0), 18450);
+  assert.ok(snapshot.products.every((product) => product.priceCents === 0));
+  assert.ok(snapshot.transactions.every((transaction) => transaction.amountCents === 0));
+  assert.equal(snapshot.transactions.reduce((sum, t) => sum + t.amountCents, 0), 0);
   assert.equal(snapshot.qrScans, 143);
   assert.equal((snapshot.purchasingSessions / snapshot.qrScans * 100).toFixed(1), "67.8");
   assert.equal(snapshot.inventory.reduce((sum, item) => sum + item.stock, 0), 34);
@@ -47,7 +49,8 @@ test("pickup relocks on the server, records one sale, and broadcasts every metri
   assert.equal(store.getOrder(order.id).status, "completed");
   assert.equal(snapshot.inventory[0].stock, 7);
   assert.equal(snapshot.transactions.length, 98);
-  assert.equal(snapshot.transactions.reduce((sum, sale) => sum + sale.amountCents, 0), 18650);
+  assert.equal(snapshot.transactions[0].amountCents, 0);
+  assert.equal(snapshot.transactions.reduce((sum, sale) => sum + sale.amountCents, 0), 0);
   assert.equal(snapshot.transactions[0].locationId, "hacking");
   assert.equal(snapshot.transactions.filter((sale) => sale.locationId === "hacking").length, 40);
   assert.equal(snapshot.purchasingSessions, 98);

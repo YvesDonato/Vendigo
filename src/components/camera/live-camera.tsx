@@ -30,12 +30,11 @@ export function LiveCamera({ onStatus }: { onStatus: (status: CameraStatus) => v
   }, [status, attempt]);
 
   return <section className="panel camera-panel" id="camera">
-    <div className="panel-heading"><div><span className="eyebrow">A view from the ground</span><h2>Live Robot Camera</h2></div><Camera size={19} className="muted" /></div>
+    <div className="panel-heading"><h2>Live Robot Camera</h2><Camera size={19} className="muted" /></div>
     <div className={`camera-view ${status === "online" ? "is-online" : ""}`}>
-      {configured && status !== "offline" && <img key={attempt} src={`/api/camera/stream?attempt=${attempt}`} alt="Live view from Hawk #1’s onboard camera" onLoad={() => setStatus("online")} onError={() => setStatus("offline")} />}
-      {status !== "online" && <div className="camera-fallback"><span className="camera-off-icon">{status === "connecting" ? <Radio size={27} /> : <VideoOff size={27} />}</span><strong>{status === "connecting" ? "Connecting to Hawk…" : "Waiting for a little perspective"}</strong><p>{status === "connecting" ? "Establishing the camera feed." : "The onboard camera is offline. Your store is still open."}</p><button className="camera-retry" onClick={() => { setConfigured(false); setStatus("connecting"); setAttempt((n) => n + 1); }}><RotateCw size={13} /> Reconnect camera</button></div>}
-      <div className="camera-overlay"><span><span className={`status-dot ${status === "online" ? "" : "dot-muted"}`} /> {status === "online" ? "LIVE" : "STANDBY"}</span><span>HAWK #1 · CAM 01</span></div>
+      {configured && status !== "offline" && <img key={attempt} src={`/api/camera/stream?attempt=${attempt}`} alt="Live onboard camera feed" onLoad={() => setStatus("online")} onError={() => setStatus("offline")} />}
+      {status !== "online" && <div className="camera-fallback"><span className="camera-off-icon">{status === "connecting" ? <Radio size={27} /> : <VideoOff size={27} />}</span><strong>{status === "connecting" ? "Connecting…" : "Camera offline"}</strong><button className="button button-secondary" onClick={() => { setConfigured(false); setStatus("connecting"); setAttempt((n) => n + 1); }}><RotateCw size={15} /> Reconnect camera</button></div>}
     </div>
-    <div className="camera-footer"><span>Onboard ESP32 camera</span><span className={status === "online" ? "text-green" : "muted"}>{status === "online" ? "Feed connected" : "No signal"}</span></div>
+    {status === "online" && <p className="camera-caption">Feed connected</p>}
   </section>;
 }
