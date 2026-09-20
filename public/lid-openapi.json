@@ -1,0 +1,79 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Vendigo Lid API",
+    "version": "1.0.0",
+    "description": "Controls the lid servo. Open commands 0 degrees; closed commands 180 degrees. Responses describe commanded positions, not measured lid positions. The controller has no lid position sensor."
+  },
+  "servers": [{ "url": "https://vendi.yvesdonato.com" }],
+  "security": [{ "lidToken": [] }],
+  "paths": {
+    "/api/v1/lid": {
+      "get": {
+        "operationId": "getLid",
+        "summary": "Read the lid's commanded position",
+        "responses": {
+          "200": { "$ref": "#/components/responses/Lid" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "502": { "$ref": "#/components/responses/ControllerError" },
+          "503": { "$ref": "#/components/responses/NotConfigured" },
+          "504": { "$ref": "#/components/responses/Timeout" }
+        }
+      },
+      "post": {
+        "operationId": "setLid",
+        "summary": "Command the lid open or closed",
+        "description": "Repeated commands request the same position. This operation does not control the wheels.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["state"],
+                "properties": { "state": { "type": "string", "enum": ["open", "closed"] } }
+              },
+              "examples": { "open": { "value": { "state": "open" } }, "close": { "value": { "state": "closed" } } }
+            }
+          }
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/Lid" },
+          "400": { "description": "Invalid JSON or state" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "415": { "description": "Content-Type must be application/json" },
+          "502": { "$ref": "#/components/responses/ControllerError" },
+          "503": { "$ref": "#/components/responses/NotConfigured" },
+          "504": { "$ref": "#/components/responses/Timeout" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": { "lidToken": { "type": "http", "scheme": "bearer" } },
+    "responses": {
+      "Lid": {
+        "description": "Controller reported its commanded position",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": ["commanded_state", "commanded_angle", "enabled", "position_feedback"],
+              "properties": {
+                "commanded_state": { "type": "string", "enum": ["open", "closed", "unknown"] },
+                "commanded_angle": { "type": ["integer", "null"], "minimum": 0, "maximum": 180 },
+                "enabled": { "type": "boolean" },
+                "position_feedback": { "const": false }
+              }
+            }
+          }
+        }
+      },
+      "Unauthorized": { "description": "Missing or invalid lid API bearer token" },
+      "ControllerError": { "description": "Controller unreachable, rejected the request, or returned an invalid response" },
+      "NotConfigured": { "description": "API key or controller configuration unavailable" },
+      "Timeout": { "description": "Controller did not respond within three seconds; command outcome may be unknown" }
+    }
+  }
+}

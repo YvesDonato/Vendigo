@@ -1,0 +1,70 @@
+{
+  "metadata": {
+    "name": "Trained DeBERTa + camera clearance",
+    "model": "/raid/userdata/donatoy/openjev-deberta-nav-20260919/training/export",
+    "sensor": "front RGB only",
+    "memory": "current front-camera description only",
+    "load_seconds": 4.727021142840385,
+    "backend": "deberta_navigation",
+    "input_kind": "rgb",
+    "method": "Fine-tuned typed decision over straight/left/right/stop; camera-rule imitation",
+    "score_meaning": "uncalibrated class probability, not safety confidence",
+    "navigation_config": {
+      "actions": [
+        "straight",
+        "left",
+        "right",
+        "stop"
+      ],
+      "descriptor_version": "rgb-clearance-v1",
+      "instructions": "Which driving action should the robot take next based only on the front-camera description?",
+      "schema_version": 1,
+      "state_source": "front_camera_rgb",
+      "supervision": "camera-rule imitation",
+      "task": "camera_navigation"
+    },
+    "camera_calibration": {
+      "camera_fov": 90.0,
+      "camera_height": 0.09,
+      "camera_pitch_deg": 0.0,
+      "camera_forward": 0.0875,
+      "depth_scale": 1.0,
+      "min_range_fraction": 1.0,
+      "rear": -0.0875,
+      "front": 0.0875,
+      "half_width": 0.06,
+      "vehicle_height": 0.5,
+      "floor_tolerance": 0.015,
+      "braking_deceleration": 0.5,
+      "safety_margin": 0.15,
+      "lateral_margin": 0.04,
+      "retrace_margin": 0.08,
+      "control_interval": 0.25,
+      "max_age": 0.5
+    },
+    "physical_clearance_validated": false,
+    "turn_geometry": "forward arcs used as direction cues; physical robot pivots",
+    "visibility_guard_max_channel_range": 8
+  },
+  "input": "Captured blocked camera view; no motor commands",
+  "results": [
+    {
+      "direction": "left",
+      "reason": "Fine-tuned DeBERTa selected left from the front-camera description (class probability 1.000; uncalibrated).",
+      "source": "vlm",
+      "latency_s": 0.21238817181438208
+    },
+    {
+      "direction": "left",
+      "reason": "Fine-tuned DeBERTa selected left from the front-camera description (class probability 1.000; uncalibrated).",
+      "source": "vlm",
+      "latency_s": 0.20198079384863377
+    },
+    {
+      "direction": "left",
+      "reason": "Fine-tuned DeBERTa selected left from the front-camera description (class probability 1.000; uncalibrated).",
+      "source": "vlm",
+      "latency_s": 0.11306757619604468
+    }
+  ]
+}

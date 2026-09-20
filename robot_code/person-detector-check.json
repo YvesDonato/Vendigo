@@ -1,0 +1,132 @@
+{
+  "fixture_url": "https://raw.githubusercontent.com/ultralytics/assets/main/im/bus.jpg",
+  "fixture_sha256": "c02019c4979c191eb739ddd944445ef408dad5679acab6fd520ef9d434bfbc63",
+  "metadata": {
+    "name": "Follow closest person",
+    "backend": "person_follow",
+    "input_kind": "rgb",
+    "detector": "TorchVision SSDLite320 MobileNetV3 COCO_V1",
+    "detector_sha256": "a79551df90c79834bcd3bb3845ef9d966b5449a3a9b2833ae8404778ca5d65d2",
+    "follow_gap_m": 1.2,
+    "selection": "nearest estimated range in current image",
+    "camera_calibration": {
+      "camera_fov": 90.0,
+      "camera_height": 0.09,
+      "camera_pitch_deg": 0.0,
+      "camera_forward": 0.0875,
+      "depth_scale": 1.0,
+      "min_range_fraction": 1.0,
+      "rear": -0.0875,
+      "front": 0.0875,
+      "half_width": 0.06,
+      "vehicle_height": 0.5,
+      "floor_tolerance": 0.015,
+      "braking_deceleration": 0.5,
+      "safety_margin": 0.15,
+      "lateral_margin": 0.04,
+      "retrace_margin": 0.08,
+      "control_interval": 0.25,
+      "max_age": 0.5
+    },
+    "physical_clearance_validated": false,
+    "memory": "last seen side for searching; no identity recognition"
+  },
+  "results": [
+    {
+      "decision": {
+        "direction": "left",
+        "reason": "Following the nearest detected person: left (estimated range 4.1 m)."
+      },
+      "tracking": {
+        "people": [
+          {
+            "box": [
+              0.05957510206434462,
+              0.3639720280965169,
+              0.28232404920789933,
+              0.8401831309000651
+            ],
+            "score": 0.9883097410202026,
+            "range_m": 4.1375614404678345
+          },
+          {
+            "box": [
+              0.27101484934488934,
+              0.3672433853149414,
+              0.4143051995171441,
+              0.7971542358398438
+            ],
+            "score": 0.7827435731887817,
+            "range_m": 4.8461374044418335
+          }
+        ],
+        "target": 0
+      },
+      "latency_ms": 149.0
+    },
+    {
+      "decision": {
+        "direction": "left",
+        "reason": "Following the nearest detected person: left (estimated range 4.1 m)."
+      },
+      "tracking": {
+        "people": [
+          {
+            "box": [
+              0.05957510206434462,
+              0.3639720280965169,
+              0.28232404920789933,
+              0.8401831309000651
+            ],
+            "score": 0.9883097410202026,
+            "range_m": 4.1375614404678345
+          },
+          {
+            "box": [
+              0.27101484934488934,
+              0.3672433853149414,
+              0.4143051995171441,
+              0.7971542358398438
+            ],
+            "score": 0.7827435731887817,
+            "range_m": 4.8461374044418335
+          }
+        ],
+        "target": 0
+      },
+      "latency_ms": 100.6
+    },
+    {
+      "decision": {
+        "direction": "left",
+        "reason": "Following the nearest detected person: left (estimated range 4.1 m)."
+      },
+      "tracking": {
+        "people": [
+          {
+            "box": [
+              0.05957510206434462,
+              0.3639720280965169,
+              0.28232404920789933,
+              0.8401831309000651
+            ],
+            "score": 0.9883097410202026,
+            "range_m": 4.1375614404678345
+          },
+          {
+            "box": [
+              0.27101484934488934,
+              0.3672433853149414,
+              0.4143051995171441,
+              0.7971542358398438
+            ],
+            "score": 0.7827435731887817,
+            "range_m": 4.8461374044418335
+          }
+        ],
+        "target": 0
+      },
+      "latency_ms": 97.1
+    }
+  ]
+}

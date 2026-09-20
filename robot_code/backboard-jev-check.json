@@ -1,0 +1,187 @@
+{
+  "provider": "typesafe",
+  "requested_model": "jev-latest",
+  "source": "live Backboard API; synthetic observations only",
+  "results": [
+    {
+      "case": "centred",
+      "direction": "straight",
+      "reason": "TypeSafe jev-1.13.0: straight (estimated gap 0.5 m; camera-derived observations).",
+      "latency_s": 0.6704229069873691,
+      "jev": {
+        "model": "jev-1.13.0",
+        "choice": "straight",
+        "probabilities": {
+          "left": 0.0,
+          "stop": 0.32,
+          "right": 0.0,
+          "straight": 0.68
+        }
+      }
+    },
+    {
+      "case": "left",
+      "direction": "left",
+      "reason": "TypeSafe jev-1.13.0: left (estimated gap 0.5 m; camera-derived observations).",
+      "latency_s": 0.5974564770003781,
+      "jev": {
+        "model": "jev-1.13.0",
+        "choice": "left",
+        "probabilities": {
+          "left": 0.45,
+          "stop": 0.3,
+          "right": 0.18,
+          "straight": 0.07
+        }
+      }
+    },
+    {
+      "case": "close",
+      "direction": "stop",
+      "reason": "TypeSafe jev-1.13.0: stop (estimated gap 0.5 m; camera-derived observations).",
+      "latency_s": 0.6564599530247506,
+      "jev": {
+        "model": "jev-1.13.0",
+        "choice": "stop",
+        "probabilities": {
+          "left": 0.0,
+          "stop": 0.92,
+          "right": 0.0,
+          "straight": 0.08
+        }
+      }
+    },
+    {
+      "case": "lost",
+      "direction": "stop",
+      "reason": "TypeSafe jev-1.13.0: stop (estimated gap 0.5 m; camera-derived observations).",
+      "latency_s": 0.5641669299802743,
+      "jev": {
+        "model": "jev-1.13.0",
+        "choice": "stop",
+        "probabilities": {
+          "left": 0.0,
+          "stop": 1.0,
+          "right": 0.0,
+          "straight": 0.0
+        }
+      }
+    }
+  ],
+  "robot_movement_tested": false,
+  "live_camera_check": {
+    "decisions_sampled": 25,
+    "verified_models": [
+      "jev-1.13.0"
+    ],
+    "enabled_during_check": false,
+    "observation": "Hosted decisions received; local camera/controller connection subsequently timed out."
+  },
+  "explicit_phase_checks": [
+    {
+      "case": "search_right",
+      "direction": "right",
+      "reason": "TypeSafe jev-1.13.0: right (estimated gap 0.5 m; camera-derived observations).",
+      "jev": {
+        "model": "jev-1.13.0",
+        "choice": "right",
+        "probabilities": {
+          "left": 0.0,
+          "stop": 0.0,
+          "right": 1.0,
+          "straight": 0.0
+        }
+      },
+      "latency_s": 0.7069510970031843
+    },
+    {
+      "case": "search_left",
+      "direction": "left",
+      "reason": "TypeSafe jev-1.13.0: left (estimated gap 0.5 m; camera-derived observations).",
+      "jev": {
+        "model": "jev-1.13.0",
+        "choice": "left",
+        "probabilities": {
+          "left": 1.0,
+          "stop": 0.0,
+          "right": 0.0,
+          "straight": 0.0
+        }
+      },
+      "latency_s": 0.568263413006207
+    },
+    {
+      "case": "waiting",
+      "direction": "stop",
+      "reason": "TypeSafe jev-1.13.0: stop (estimated gap 0.5 m; camera-derived observations).",
+      "jev": {
+        "model": "jev-1.13.0",
+        "choice": "stop",
+        "probabilities": {
+          "left": 0.0,
+          "stop": 1.0,
+          "right": 0.0,
+          "straight": 0.0
+        }
+      },
+      "latency_s": 0.5566705419914797
+    },
+    {
+      "case": "centred",
+      "direction": "straight",
+      "reason": "TypeSafe jev-1.13.0: straight (estimated gap 0.5 m; camera-derived observations).",
+      "jev": {
+        "model": "jev-1.13.0",
+        "choice": "straight",
+        "probabilities": {
+          "left": 0.01,
+          "stop": 0.45,
+          "right": 0.03,
+          "straight": 0.51
+        }
+      },
+      "latency_s": 0.7820263030007482
+    },
+    {
+      "case": "left",
+      "direction": "left",
+      "reason": "TypeSafe jev-1.13.0: left (estimated gap 0.5 m; camera-derived observations).",
+      "jev": {
+        "model": "jev-1.13.0",
+        "choice": "left",
+        "probabilities": {
+          "left": 0.63,
+          "stop": 0.21,
+          "right": 0.0,
+          "straight": 0.16
+        }
+      },
+      "latency_s": 0.6828538250119891
+    },
+    {
+      "case": "close",
+      "direction": "stop",
+      "reason": "TypeSafe jev-1.13.0: stop (estimated gap 0.5 m; camera-derived observations).",
+      "jev": {
+        "model": "jev-1.13.0",
+        "choice": "stop",
+        "probabilities": {
+          "left": 0.0,
+          "stop": 1.0,
+          "right": 0.0,
+          "straight": 0.0
+        }
+      },
+      "latency_s": 0.8162808999768458
+    }
+  ],
+  "explicit_phase_live_check": {
+    "samples": 40,
+    "camera_connected_samples": 40,
+    "search_choices": 31,
+    "stop_samples": 9,
+    "frames_received_during_check": 85,
+    "robot_armed_by_check": false,
+    "note": "After user camera restart; all valid Jev choices were left search. Some samples paused waiting for a fresh intent."
+  }
+}

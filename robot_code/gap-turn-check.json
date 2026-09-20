@@ -1,0 +1,29 @@
+{
+  "follow_gap_m": 0.25,
+  "stop_distance_cm": 25,
+  "drive_pwm": 255,
+  "turn_pwm": 200,
+  "camera": "Connected",
+  "model": "YOLO26s + BoT-SORT / rule-based following",
+  "steering_enabled": false,
+  "live_suggestion": "left",
+  "reason": "Following selected feet: left (estimated 0.72 m; gap 0.25 m).",
+  "controller": {
+    "stop_distance_cm": 25,
+    "distance_cm": 48.1,
+    "distance_age_ms": 47,
+    "armed": false,
+    "pwm1_duty": 0,
+    "pwm2_duty": 0,
+    "driver_enabled": false
+  },
+  "checks": [
+    "person/feet gap boundaries and display",
+    "25/50 cm measured approach, UI and IPC",
+    "25/50 cm controller guard and PWM routing",
+    "tracker regression",
+    "installed host and H100 source hashes",
+    "live model ready, controller cutoff and motors stopped"
+  ],
+  "physical_motion_tested": false
+}

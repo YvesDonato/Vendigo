@@ -1,0 +1,42 @@
+{
+  "samples": 30,
+  "model": "Follow one person",
+  "backend": "local",
+  "camera_connected": 30,
+  "model_ready": 30,
+  "robot_connected": 30,
+  "steering_enabled_samples": 0,
+  "median_inference_ms": 71.0,
+  "max_decision_age_ms": 188,
+  "directions": {
+    "left": 25,
+    "stop": 5
+  },
+  "reasons": {
+    "Following selected person: left (estimated 1.7 m; gap 0.5 m).": 6,
+    "Following selected person: left (estimated 1.6 m; gap 0.5 m).": 3,
+    "Person lost; waiting still for 2 seconds before searching left.": 3,
+    "Reached the 50 cm front gap; holding position.": 2,
+    "Following selected person: left (estimated 1.9 m; gap 0.5 m).": 1,
+    "Following selected person: left (estimated 1.8 m; gap 0.5 m).": 1,
+    "Following selected person: left (estimated 1.0 m; gap 0.5 m).": 4,
+    "Following selected person: left (estimated 0.9 m; gap 0.5 m).": 4,
+    "Following selected person: left (estimated 0.8 m; gap 0.5 m).": 2,
+    "Following selected person: left (estimated 0.7 m; gap 0.5 m).": 3,
+    "Following selected person: left (estimated 1.2 m; gap 0.5 m).": 1
+  },
+  "sensor_valid": 30,
+  "last": {
+    "model": "Follow one person",
+    "backend": "local",
+    "camera": "Connected",
+    "ready": true,
+    "enabled": false,
+    "connected": true,
+    "direction": "left",
+    "reason": "Following selected person: left (estimated 0.7 m; gap 0.5 m).",
+    "inference_ms": 82.68146496266127,
+    "decision_age_ms": 173,
+    "sensor_cm": 43.3
+  }
+}

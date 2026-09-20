@@ -1,0 +1,47 @@
+--- a/person_follow.py
++++ b/person_follow.py
+@@ -168,8 +168,8 @@
+ 
+ def follow_decision(tracking, gap, search_direction="left"):
+     tracking = validate_tracking(tracking)
+-    if type(gap) not in (int, float) or not math.isfinite(gap) or not .5 <= gap <= 3:
+-        raise ValueError("Following gap must be between 0.5 and 3 metres")
++    if type(gap) not in (int, float) or not math.isfinite(gap) or not .25 <= gap <= 3:
++        raise ValueError("Following gap must be between 0.25 and 3 metres")
+     if search_direction not in {"left", "right"}:
+         raise ValueError("Search direction must be left or right")
+     if tracking["target"] is None:
+@@ -180,9 +180,9 @@
+     # Box area is not distance: seated people and cropped bodies can fill the
+     # image while still beyond the gap. The same-frame obstacle guard also applies.
+     if distance <= gap:
+-        return dict(direction="stop", reason=f"{target} close; holding position (estimated {distance:.1f} m; gap {gap:.1f} m).")
++        return dict(direction="stop", reason=f"{target} close; holding position (estimated {distance:.2f} m; gap {gap:g} m).")
+     direction = horizontal_direction(person["box"])
+-    return dict(direction=direction, reason=f"Following selected {target.lower()}: {direction} (estimated {distance:.1f} m; gap {gap:.1f} m).")
++    return dict(direction=direction, reason=f"Following selected {target.lower()}: {direction} (estimated {distance:.2f} m; gap {gap:g} m).")
+ 
+ 
+ class PersonFollower:
+--- a/camera_live.py
++++ b/camera_live.py
+@@ -448,7 +448,7 @@
+     parser.add_argument("--openjev-turns-only", action="store_true", help="Use rules for forward movement and OpenJEV only for turns")
+     parser.add_argument("--backboard-key-file", type=Path,
+                         help="Use hosted TypeSafe Jev for person-following decisions; private local API key file")
+-    parser.add_argument("--follow-gap", type=float, default=1.0, help="Estimated following gap in metres, 0.5-3")
++    parser.add_argument("--follow-gap", type=float, default=1.0, help="Estimated following gap in metres, 0.25-3")
+     parser.add_argument("--follow-distance-scale", type=float, default=1.0, help="Measured correction of target distances only, 0.05-5")
+     parser.add_argument("--port", type=int, default=8770)
+     parser.add_argument("--max-frame-age", type=float, default=0.5,
+@@ -478,8 +478,8 @@
+         parser.error("OpenJEV following paths must be absolute remote paths")
+     if not math.isfinite(args.follow_distance_scale) or not .05 <= args.follow_distance_scale <= 5:
+         parser.error("Following distance scale must be between 0.05 and 5")
+-    if args.follow_person and (not args.deberta_calibration or not math.isfinite(args.follow_gap) or not .5 <= args.follow_gap <= 3):
+-        parser.error("Person following needs --camera-calibration and a gap between 0.5 and 3 metres")
++    if args.follow_person and (not args.deberta_calibration or not math.isfinite(args.follow_gap) or not .25 <= args.follow_gap <= 3):
++        parser.error("Person following needs --camera-calibration and a gap between 0.25 and 3 metres")
+     if args.deberta_calibration and (not args.deberta_calibration.is_absolute() or args.min_route_entailment is not None):
+         parser.error("DeBERTa needs an absolute calibration path and no entailment cutoff")
+     if args.min_route_entailment is not None and (not math.isfinite(args.min_route_entailment) or not 0 < args.min_route_entailment <= 1):

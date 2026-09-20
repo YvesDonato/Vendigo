@@ -24,7 +24,7 @@ export function RobotCard({ robot, state, cameraStatus }: { robot: Robot; state:
     setPending(value); setMessage(""); setFailed(false);
     try {
       await api("/api/robot/command", { robotId: robot.id, command: value, compartmentId: compartment });
-      setMessage(value === "stop" ? "Hawk stopped." : value === "resume" ? "Purchases resumed." : value === "return-to-base" ? "Return to base started." : value === "retry-lock" ? "Lock retry sent." : `Compartment ${compartment} opened. Locks in 10 seconds.`);
+      setMessage(value === "stop" ? "Vendigo stopped." : value === "resume" ? "Purchases resumed." : value === "return-to-base" ? "Return to base started." : value === "retry-lock" ? "Lock retry sent." : `Compartment ${compartment} opened. Locks in 7 seconds.`);
     } catch (error) { setFailed(true); setMessage(error instanceof Error ? error.message : "Command failed. Please try again."); }
     finally { setPending(null); }
   }

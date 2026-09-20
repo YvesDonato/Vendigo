@@ -1,0 +1,427 @@
+--- a/person_follow.py
++++ b/person_follow.py
+@@ -148,12 +148,18 @@
+                                           for person in tracking["people"]], target=tracking["target"]))
+ 
+ 
+-def horizontal_direction(box):
++def horizontal_direction(box, previous="straight"):
+     center = (box[0] + box[2]) / 2
+-    return "left" if center < .38 else "right" if center > .62 else "straight"
+-
+-
+-def front_approach_allowed(tracking, observation, now):
++    if center < .38 or center > .62:
++        return "left" if center < .38 else "right"
++    if previous == "left" and center < .42:
++        return "left"
++    if previous == "right" and center > .58:
++        return "right"
++    return "straight"
++
++
++def front_approach_allowed(tracking, observation, now, horizontal=None):
+     """A fresh centred target and visible clear path; range is checked on the host."""
+     validate_tracking(tracking)
+     target = tracking["target"]
+@@ -162,11 +168,12 @@
+     box = tracking["people"][target]["box"]
+     # ponytail: alignment only associates the front beam approximately;
+     # use a depth camera for person-specific range or obstacles outside the beam.
+-    return bool(horizontal_direction(box) == "straight" and box[0] <= .5 <= box[2]
++    horizontal = horizontal_direction(box) if horizontal is None else horizontal
++    return bool(horizontal == "straight" and box[0] <= .5 <= box[2]
+                 and observation.check(.35, 0, now=now)["safe"])
+ 
+ 
+-def follow_decision(tracking, gap, search_direction="left"):
++def follow_decision(tracking, gap, search_direction="left", previous_direction="straight"):
+     tracking = validate_tracking(tracking)
+     if type(gap) not in (int, float) or not math.isfinite(gap) or not .25 <= gap <= 3:
+         raise ValueError("Following gap must be between 0.25 and 3 metres")
+@@ -181,7 +188,7 @@
+     # image while still beyond the gap. The same-frame obstacle guard also applies.
+     if distance <= gap:
+         return dict(direction="stop", reason=f"{target} close; holding position (estimated {distance:.2f} m; gap {gap:g} m).")
+-    direction = horizontal_direction(person["box"])
++    direction = horizontal_direction(person["box"], previous_direction)
+     return dict(direction=direction, reason=f"Following selected {target.lower()}: {direction} (estimated {distance:.2f} m; gap {gap:g} m).")
+ 
+ 
+@@ -208,11 +215,7 @@
+         self.guard = RGBObstacleGuard(checkpoint=models / "depth_anything_v2_metric_hypersim_vits.pth", calibration=calibration)
+         self.torch, self.gap = torch, gap
+         self.search_direction = "left"
+-        self.range_samples = deque(maxlen=3)
+-        self.last_target_box = None
+-        self.last_seen_at = None
+-        self.lost_since = None
+-        self.locked_target = None
++        self.reset_target()
+         self.tracking = dict(people=[], target=None)
+         self.steering_model = None
+         if openjev_model is not None:
+@@ -233,6 +236,7 @@
+                              clear_motion_options_version=1,
+                              detector="Ultralytics YOLO26s", detector_sha256=WEIGHTS_SHA256,
+                              tracker="BoT-SORT with camera-motion compensation", tracking_ids_version=1,
++                             horizontal_enter=[.38, .62], horizontal_exit=[.42, .58], body_id_memory_s=LOST_WAIT_SECONDS,
+                              range_filter_samples=3, range_filter_window_s=RANGE_WINDOW_SECONDS,
+                              immediate_close_margin_m=CLOSE_MARGIN,
+                              feet_detector=FEET_MODEL, feet_revision=FEET_REVISION, feet_min_score=FEET_SCORE,
+@@ -242,12 +246,18 @@
+         if self.steering_model:
+             self.metadata.update(self.steering_model.metadata)
+ 
++    def reset_target(self):
++        self.range_samples = deque(maxlen=3)
++        self.last_target_box = self.last_seen_at = self.lost_since = self.locked_target = None
++        self.selected_body_id = self.selected_body_seen_at = None
++        self.horizontal_intent = "straight"
++
+     def detect_people(self, pixels, depth, captured):
+         # Reset IDs after a long capture gap; never match across a disconnected stream.
+         if self.detector_seen_at is not None and not 0 <= captured - self.detector_seen_at <= LOST_WAIT_SECONDS:
+             for tracker in self.detector.predictor.trackers:
+                 tracker.reset()
+-            self.locked_target = None
++            self.reset_target()
+         self.detector_seen_at = captured
+         # Ultralytics numpy inputs use BGR; the camera/depth/feet pipeline uses RGB.
+         result = self.detector.track(pixels[:, :, ::-1].copy(), persist=True,
+@@ -276,18 +286,25 @@
+     def select_target(self, tracking, captured):
+         validate_tracking(tracking)
+         people = tracking["people"]
++        if self.last_seen_at is not None and captured < self.last_seen_at:
++            self.reset_target()
+         if self.lost_since is not None and captured - self.lost_since >= LOST_WAIT_SECONDS:
+-            self.locked_target = None
++            self.reset_target()
++        if (self.lost_since is None and self.selected_body_seen_at is not None
++                and captured - self.selected_body_seen_at >= LOST_WAIT_SECONDS):
++            # Feet retain the spatial lock, but cannot keep an expired body ID alive.
++            self.selected_body_id = self.selected_body_seen_at = None
+         target = None
+         if people and self.locked_target is None:
+             target = min(range(len(people)), key=lambda i: (abs(sum(people[i]["box"][::2]) / 2 - .5), people[i]["range_m"]))
+         elif people:
+             previous = self.locked_target
+-            previous_id = previous.get("track_id")
++            previous_id = self.selected_body_id
+             same_id = next((i for i, p in enumerate(people)
+                             if previous_id is not None and p.get("track_id") == previous_id), None)
+             if same_id is not None:
+                 self.locked_target = people[same_id]
++                self.selected_body_seen_at = captured
+                 return validate_tracking(dict(people=people, target=same_id))
+             a = previous["box"]
+             area_a = (a[2] - a[0]) * (a[3] - a[1])
+@@ -311,11 +328,16 @@
+             # ponytail: body/feet transitions still use position and depth;
+             # crossing feet need a dedicated association model if this proves ambiguous.
+             self.locked_target = people[target]
++            if "track_id" in self.locked_target:
++                self.selected_body_id = self.locked_target["track_id"]
++                self.selected_body_seen_at = captured
+         return validate_tracking(dict(people=people, target=target))
+ 
+     def choose_direction(self, tracking, captured):
+         validate_tracking(tracking)
+         policy_tracking = tracking
++        if self.last_seen_at is not None and captured < self.last_seen_at:
++            self.horizontal_intent = "straight"
+         if tracking["target"] is not None:
+             person = tracking["people"][tracking["target"]]
+             box, distance = person["box"], person["range_m"]
+@@ -338,10 +360,12 @@
+         else:
+             self.range_samples.clear()
+             self.last_target_box = None
+-        decision = follow_decision(policy_tracking, self.gap, self.search_direction)
++            self.horizontal_intent = "straight"
++        decision = follow_decision(policy_tracking, self.gap, self.search_direction, self.horizontal_intent)
+         if tracking["target"] is not None:
+             box = tracking["people"][tracking["target"]]["box"]
+-            side = horizontal_direction(box)
++            side = horizontal_direction(box, self.horizontal_intent)
++            self.horizontal_intent = side
+             if side in {"left", "right"}:
+                 self.search_direction = side
+             self.last_seen_at = captured
+@@ -360,7 +384,7 @@
+         with self.torch.inference_mode():
+             depth = self.guard.estimate_depth(pixels)
+             people = self.detect_people(pixels, depth * self.guard.calibration.depth_scale, started)
+-            selected_id = (self.locked_target or {}).get("track_id")
++            selected_id = self.selected_body_id
+             body_found = selected_id is not None and any(p.get("track_id") == selected_id for p in people["people"])
+             feet = (dict(people=[], target=None) if body_found else
+                     self.detect_feet(pixels, depth * self.guard.calibration.depth_scale))
+@@ -371,7 +395,7 @@
+         decision = self.choose_direction(self.tracking, started)
+         observation = _observation_from_depth(depth, started, self.guard.calibration)
+         now = time.monotonic()
+-        self.front_approach_clear = front_approach_allowed(self.tracking, observation, now)
++        self.front_approach_clear = front_approach_allowed(self.tracking, observation, now, self.horizontal_intent)
+         self.clear_motion_options = scene_motion_options(observation, now)
+         self.motion_options = guarded_motion_options(decision, self.tracking, observation, now, self.clear_motion_options)
+         if observation.error or not 0 <= now - started <= self.guard.calibration.max_age:
+--- a/robot_steering.py
++++ b/robot_steering.py
+@@ -11,6 +11,9 @@
+ REQUEST_TIMEOUT = 0.15
+ FRAME_RECOVERY_TIMEOUT = 2.0
+ FOLLOW_HOLD_SECONDS = 1.0
++TURN_BURST_MS = 120
++TURN_MIN_BUDGET_MS = 80
++TURN_SETTLE_SECONDS = .08  # Arrival-time buffer; no wheel encoders/camera capture clock.
+ 
+ 
+ class WaitingForFrame(ValueError):
+@@ -33,7 +36,8 @@
+ 
+ def front_approach(result, sensor):
+     """Use measured front range for a current centred-person approach."""
+-    if result.get("front_approach_clear") is not True or not sensor or sensor.get("stop_distance_cm") is None:
++    if (result.get("direction") in {"left", "right"} or result.get("front_approach_clear") is not True
++            or not sensor or sensor.get("stop_distance_cm") is None):
+         return result
+     cm, cutoff = sensor.get("distance_cm"), sensor["stop_distance_cm"]
+     ready = front_reading_ready(sensor)
+@@ -52,7 +56,7 @@
+             or tracking.get("target") is not None):
+         return decision
+     direction, age = sensor.get("follow_direction"), sensor.get("follow_age_s")
+-    if (direction not in {"straight", "left", "right"} or age is None or not 0 <= age < FOLLOW_HOLD_SECONDS
++    if (direction != "straight" or age is None or not 0 <= age < FOLLOW_HOLD_SECONDS
+             or direction not in result.get("clear_motion_options", []) or not front_reading_ready(sensor)
+             or sensor.get("stop_distance_cm") is None or sensor["distance_cm"] <= sensor["stop_distance_cm"]
+             or sensor.get("distance_blocked") is not False):
+@@ -89,6 +93,12 @@
+     return result["direction"], lease, frame.id
+ 
+ 
++def motor_output_stopped(reply):
++    return (reply.get("direction") == "stop"
++            and all(type(reply.get(k)) is int and reply[k] == 0 for k in ("speed", "pwm1_duty", "pwm2_duty"))
++            and reply.get("driver_enabled") is False)
++
++
+ class RobotSteering:
+     def __init__(self, relay, url, token, speed=160, turn_speed=160, stop_distance_cm=None):
+         parsed = urlsplit(url)
+@@ -115,6 +125,8 @@
+         self.distance_blocked = None
+         self.distance_received = None
+         self.follow_direction = self.follow_seen = None
++        self.turn_phase = "idle"
++        self.turn_bursts = getattr(relay.args, "follow_person", False)
+ 
+     def request(self, path, fields=None):
+         body = None if fields is None else urlencode(fields).encode("ascii")
+@@ -204,6 +216,7 @@
+         with self.lock:
+             elapsed = None if self.distance_received is None else max(0, time.monotonic() - self.distance_received)
+             return dict(enabled=self.enabled, connected=self.connected, direction=self.direction,
++                        turn_phase=self.turn_phase,
+                         message=self.message, frame_id=self.last_frame_id,
+                         distance_cm=self.distance_cm,
+                         distance_age_ms=None if elapsed is None else self.distance_age_ms + round(elapsed * 1000),
+@@ -218,6 +231,9 @@
+         next_probe = 0
+         active_revision = None
+         waiting_since = None
++        phase, turn_direction = "idle", None
++        turn_deadline = 0
++        turn_frame_after = None
+         self.stop_robot()
+         try:
+             while not self.relay.stopping.is_set():
+@@ -227,9 +243,12 @@
+                 try:
+                     if not enabled or revision != active_revision:
+                         waiting_since = None
+-                        if session is not None:
++                        if session is not None or phase != "idle":
+                             self.stop_robot()
+                             session = None
++                        phase, turn_frame_after = "idle", None
++                        with self.lock:
++                            self.turn_phase = phase
+                         if time.monotonic() >= next_probe:
+                             reply = self.request("/status")
+                             if reply.get("firmware") not in ("lordbot-jev-1", "lordbot-jev-2") or reply.get("max_speed") != 255:
+@@ -251,7 +270,75 @@
+                         active_revision = revision
+                     if waiting_since is not None and time.monotonic() - waiting_since >= FRAME_RECOVERY_TIMEOUT:
+                         raise ValueError("Camera or robot did not recover within 2 seconds; steering disabled")
++
++                    if phase == "turning":
++                        try:
++                            desired, _, _ = drive_intent(self.relay, time.monotonic())
++                        except WaitingForLeaseBudget:
++                            desired = turn_direction  # Never renew; the original short lease still expires.
++                        if desired == turn_direction and time.monotonic() < turn_deadline:
++                            self.relay.stopping.wait(min(.01, max(0, turn_deadline - time.monotonic())))
++                            continue
++                        phase = "stopping"
++                        waiting_since = time.monotonic()
++
++                    if phase == "stopping":
++                        # stop_robot() intentionally swallows errors; it cannot establish this barrier.
++                        reply = self.request("/stop", {})
++                        session = None
++                        if reply.get("ok") is not True:
++                            raise WaitingForRobot("Turn stop was not acknowledged")
++                        with self.lock:
++                            if not self.enabled or self.revision != active_revision:
++                                continue
++                            self.direction = "stop"
++                            self.follow_direction = self.follow_seen = None
++                            self.turn_phase = phase
++                        try:
++                            stopped = self.request("/status")
++                        except RuntimeError as error:
++                            raise WaitingForRobot(str(error)) from error
++                        if not motor_output_stopped(stopped):
++                            raise WaitingForRobot("Waiting for stopped motor output after turn")
++                        if self.stop_distance_cm is not None:
++                            self.update_distance(stopped)
++                        turn_frame_after = time.monotonic() + TURN_SETTLE_SECONDS
++                        phase = "observing"
++                        next_probe = time.monotonic() + .1
++
++                    if phase == "observing":
++                        with self.lock:
++                            if not self.enabled or self.revision != active_revision:
++                                continue
++                            self.direction = "stop"
++                            self.turn_phase = phase
++                            self.message = "Checking camera after turn"
++                        if time.monotonic() >= next_probe:
++                            # No motor leases while waiting, but sonar telemetry must remain current.
++                            try:
++                                reply = self.request("/status")
++                            except RuntimeError as error:
++                                raise WaitingForRobot(str(error)) from error
++                            if not motor_output_stopped(reply):
++                                raise WaitingForRobot("Motor output changed while checking camera")
++                            if self.stop_distance_cm is not None:
++                                self.update_distance(reply)
++                            next_probe = time.monotonic() + .1
++                        with self.relay.condition:
++                            observed = self.relay.decision
++                            qualified = (self.relay.model_ready and observed is not None
++                                         and observed[0].generation == self.relay.generation
++                                         and turn_frame_after <= observed[0].received <= time.monotonic())
++                        if not qualified:
++                            self.relay.stopping.wait(.01)
++                            continue
++                        drive_intent(self.relay, time.monotonic())
++                        phase = "idle"
++
+                     drive_intent(self.relay, time.monotonic())
++                    with self.lock:
++                        if not self.enabled or self.revision != active_revision:
++                            continue
+                     if session is None:
+                         session = self.request("/arm", {}).get("session")
+                         if type(session) is not int or not 0 < session <= 0xffffffff:
+@@ -262,6 +349,19 @@
+                         if not self.enabled or self.revision != active_revision:
+                             continue
+                     direction, lease, frame_id = drive_intent(self.relay, time.monotonic())
++                    if turn_frame_after is not None:
++                        with self.relay.condition:
++                            observed = self.relay.decision
++                            qualified = (observed is not None and observed[0].id == frame_id
++                                         and observed[0].generation == self.relay.generation
++                                         and turn_frame_after <= observed[0].received <= time.monotonic())
++                        if not qualified:
++                            phase = "observing"
++                            raise WaitingForFrame("Waiting for an analyzed frame received after the turn")
++                    if self.turn_bursts and direction in {"left", "right"}:
++                        if lease < TURN_MIN_BUDGET_MS:
++                            raise WaitingForLeaseBudget("Waiting for enough fresh-camera time for a turn")
++                        lease = min(TURN_BURST_MS, lease)
+                     if (getattr(self.relay.args, "openjev_turns_only", False)
+                             and direction in {"left", "right"} and direction != self.direction):
+                         # Stop forward drive (or the opposite turn) before pivoting.
+@@ -273,9 +373,7 @@
+                             self.message = "Stopping motor output before OpenJEV turn"
+                         self.relay.stopping.wait(.05)
+                         stopped = self.request("/status")
+-                        if not (stopped.get("direction") == "stop" and stopped.get("speed") == 0
+-                                and stopped.get("pwm1_duty") == 0 and stopped.get("pwm2_duty") == 0
+-                                and stopped.get("driver_enabled") is False):
++                        if not motor_output_stopped(stopped):
+                             raise WaitingForRobot("Waiting for stopped motor output before turning")
+                         if self.stop_distance_cm is not None:
+                             self.update_distance(stopped)
+@@ -284,10 +382,21 @@
+                             raise ValueError("Invalid robot control session")
+                         sequence = 0
+                         direction, lease, frame_id = drive_intent(self.relay, time.monotonic())
++                        if self.turn_bursts and direction in {"left", "right"}:
++                            if lease < TURN_MIN_BUDGET_MS:
++                                raise WaitingForLeaseBudget("Waiting for enough fresh-camera time for a turn")
++                            lease = min(TURN_BURST_MS, lease)
+                         with self.lock:
+                             if not self.enabled or self.revision != active_revision:
+                                 continue
+                     sent = time.monotonic()
++                    if waiting_since is not None and sent - waiting_since >= FRAME_RECOVERY_TIMEOUT:
++                        raise ValueError("Camera or robot did not recover within 2 seconds; steering disabled")
++                    if self.turn_bursts and direction in {"left", "right"}:
++                        # Establish before HTTP: a timeout can still mean the command executed.
++                        phase, turn_direction = "turning", direction
++                        turn_deadline = sent + lease / 1000
++                    turn_frame_after = None
+                     speed = 0 if direction == "stop" else self.speed if direction == "straight" else self.turn_speed
+                     sequence += 1
+                     reply = self.request("/drive", dict(session=session, sequence=sequence,
+@@ -304,6 +413,7 @@
+                         observed = self.relay.decision
+                     with self.lock:
+                         if self.enabled and self.revision == active_revision:
++                            self.turn_phase = phase
+                             blocked = direction == "straight" and self.distance_blocked is True
+                             self.direction = "stop" if blocked else direction
+                             if self.direction == "stop":
+@@ -314,7 +424,8 @@
+                                     # Anchor to the actual detected frame, never to a renewal or a search.
+                                     self.follow_direction, self.follow_seen = self.direction, observed[0].received
+                             self.last_frame_id = frame_id
+-                            self.message = ("Automatic steering: waiting for a supported route"
++                            self.message = (f"Turning {direction}" if phase == "turning" else
++                                            "Automatic steering: waiting for a supported route"
+                                             if direction == "stop" else "Automatic steering: " + direction)
+                             if blocked:
+                                 self.message = ("Ultrasonic echo unavailable or stale; forward movement paused"
+@@ -329,18 +440,24 @@
+                     first_pause = waiting_since is None
+                     if first_pause:
+                         waiting_since = time.monotonic()
++                    if phase != "idle" or turn_frame_after is not None:
++                        # Keep the post-stop image barrier through uncertain command delivery.
++                        phase, turn_frame_after = "stopping", None
+                     if first_pause or session is not None or isinstance(error, WaitingForRobot):
+                         self.stop_robot()
+                         session = None
+                     with self.lock:
+                         if self.enabled and self.revision == active_revision:
++                            self.turn_phase = phase
+                             self.direction = "stop"
+                             self.message = "Paused: " + str(error) + "; retrying for up to 2 seconds"
+                 except Exception as error:
+                     self.fail(error)
+                     self.stop_robot()
+                     session = None
+-                    with self.lock:
++                    phase, turn_frame_after = "idle", None
++                    with self.lock:
++                        self.turn_phase = phase
+                         self.connected = False
+                     next_probe = time.monotonic() + 1
+                 self.relay.stopping.wait(pause)

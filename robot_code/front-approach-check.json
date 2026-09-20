@@ -1,0 +1,29 @@
+{
+  "checked_at": "2026-09-19T20:49:04.051130+00:00",
+  "front_stop_cm": 50,
+  "centred_approach_uses": "fresh ultrasonic range plus current visual target/obstacle clearance",
+  "model": "OpenJEV 4B tuned following head, unchanged weights",
+  "checks_passed": [
+    "front_approach",
+    "person_follow",
+    "openjev_follow",
+    "ultrasonic_steering",
+    "camera_live",
+    "robot_steering"
+  ],
+  "live_camera_connected": true,
+  "live_trained_model_ready": true,
+  "live_approach_flag_received": true,
+  "steering_disabled_during_check": true,
+  "physical_approach_tested": false,
+  "limits": [
+    "Missing or stale camera/range data still stops movement.",
+    "The sonar beam measures front clearance, not person identity; physical stopping distance remains uncalibrated."
+  ],
+  "installed_sha256": {
+    "camera_live.py": "707a2e530a08249de22c3cedb822da8d57257f9f6123942b7a4b3cf4248e664f",
+    "robot_steering.py": "a011591ef744f7bb56140b63c638bb1282d72541780a258d70b75f7dac4e9942",
+    "person_follow.py": "3f8129060dc38db44546a31fc151b77d28a8d87ff287dd52753cd8cb29d44176",
+    "vlm_reasoner.py": "327a961db61e6b3d00faef9ab1f499294d4d37bb28165b40553569b435d4c2bb"
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "checkpoint": "/raid/userdata/donatoy/openjev-deberta-nav-20260919/training/export",
+  "device": "cpu",
+  "input_kind": "synthetic camera-clearance descriptions, not real camera frames",
+  "passed": 4,
+  "total": 4,
+  "cases": [
+    {
+      "id": "open",
+      "state": "Front-camera estimated clearance; hidden and blind space remain unknown. Checked travel distances: 0.35, 0.65, 1.00, 1.40 metres. Straight at 0.35 m/s: stopping envelope clear; distance checks clear/clear/clear/clear. Left at 0.18 m/s: stopping envelope clear; distance checks clear/clear/clear/clear. Right at 0.18 m/s: stopping envelope clear; distance checks clear/clear/clear/clear.",
+      "expected": "straight",
+      "prediction": "straight",
+      "probabilities": {
+        "straight": 1.0,
+        "left": 6.565340485359519e-32,
+        "right": 3.8392084012350064e-34,
+        "stop": 3.471016296132572e-42
+      },
+      "latency_ms": 932.24
+    },
+    {
+      "id": "blocked",
+      "state": "Front-camera estimated clearance; hidden and blind space remain unknown. Checked travel distances: 0.35, 0.65, 1.00, 1.40 metres. Straight at 0.35 m/s: stopping envelope blocked; distance checks blocked/blocked/blocked/blocked. Left at 0.18 m/s: stopping envelope blocked; distance checks blocked/blocked/blocked/blocked. Right at 0.18 m/s: stopping envelope blocked; distance checks blocked/blocked/blocked/blocked.",
+      "expected": "stop",
+      "prediction": "stop",
+      "probabilities": {
+        "straight": 4.714967791360087e-32,
+        "left": 2.6253588632394958e-30,
+        "right": 6.398613950237052e-33,
+        "stop": 1.0
+      },
+      "latency_ms": 802.22
+    },
+    {
+      "id": "obstacle_left",
+      "state": "Front-camera estimated clearance; hidden and blind space remain unknown. Checked travel distances: 0.35, 0.65, 1.00, 1.40 metres. Straight at 0.35 m/s: stopping envelope blocked; distance checks blocked/blocked/blocked/blocked. Left at 0.18 m/s: stopping envelope clear; distance checks blocked/blocked/blocked/blocked. Right at 0.18 m/s: stopping envelope clear; distance checks clear/clear/clear/clear.",
+      "expected": "right",
+      "prediction": "right",
+      "probabilities": {
+        "straight": 4.100362417755662e-38,
+        "left": 3.994198389468084e-28,
+        "right": 1.0,
+        "stop": 8.643909577187634e-40
+      },
+      "latency_ms": 795.22
+    },
+    {
+      "id": "obstacle_right",
+      "state": "Front-camera estimated clearance; hidden and blind space remain unknown. Checked travel distances: 0.35, 0.65, 1.00, 1.40 metres. Straight at 0.35 m/s: stopping envelope blocked; distance checks blocked/blocked/blocked/blocked. Left at 0.18 m/s: stopping envelope clear; distance checks clear/clear/clear/clear. Right at 0.18 m/s: stopping envelope clear; distance checks blocked/blocked/blocked/blocked.",
+      "expected": "left",
+      "prediction": "left",
+      "probabilities": {
+        "straight": 1.715949104360933e-38,
+        "left": 1.0,
+        "right": 6.717979602308144e-33,
+        "stop": 5.8733603444171085e-40
+      },
+      "latency_ms": 788.99
+    }
+  ]
+}

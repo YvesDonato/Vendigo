@@ -1,0 +1,91 @@
+{
+  "base_revision": "f8187e6e11d413d0771bcc7970b85f78e194264c",
+  "directions": [
+    "straight",
+    "left",
+    "right",
+    "stop"
+  ],
+  "head_sha256": "91d10b53bca7cdd8625d02e0812a9116f021f743cc9d847a04a132f7bbde8815",
+  "dataset_sha256": "cdac2423fee100f756ef565bedb13314b76e3daaf8ab8d6e5637538e6c34ac83",
+  "trainable_parameters": 163969,
+  "selected_epoch": 82,
+  "physical_following_validated": false,
+  "method": "Frozen OpenJEV 4B features; 64-unit steering head; synthetic rule imitation",
+  "limitations": "Disjoint exact states share templates and rules. No real-image labels or closed-loop driving evaluation.",
+  "splits": {
+    "train": {
+      "count": 483,
+      "labels": {
+        "straight": 120,
+        "left": 121,
+        "right": 121,
+        "stop": 121
+      }
+    },
+    "validation": {
+      "count": 120,
+      "labels": {
+        "straight": 30,
+        "left": 30,
+        "right": 30,
+        "stop": 30
+      }
+    },
+    "test": {
+      "count": 200,
+      "labels": {
+        "straight": 50,
+        "left": 50,
+        "right": 50,
+        "stop": 50
+      }
+    }
+  },
+  "validation": {
+    "original": {
+      "accuracy": 0.6916666626930237,
+      "unnecessary_stops": 0,
+      "movement_cases": 90,
+      "missed_required_stops": 25,
+      "stop_cases": 30,
+      "wrong_turns": 12,
+      "guarded_unnecessary_stops": 12
+    },
+    "tuned": {
+      "accuracy": 0.9666666388511658,
+      "unnecessary_stops": 1,
+      "movement_cases": 90,
+      "missed_required_stops": 1,
+      "stop_cases": 30,
+      "wrong_turns": 2,
+      "guarded_unnecessary_stops": 3
+    }
+  },
+  "test": {
+    "original": {
+      "accuracy": 0.6150000095367432,
+      "unnecessary_stops": 0,
+      "movement_cases": 150,
+      "missed_required_stops": 47,
+      "stop_cases": 50,
+      "wrong_turns": 30,
+      "guarded_unnecessary_stops": 30
+    },
+    "tuned": {
+      "accuracy": 0.9700000286102295,
+      "unnecessary_stops": 1,
+      "movement_cases": 150,
+      "missed_required_stops": 1,
+      "stop_cases": 50,
+      "wrong_turns": 4,
+      "guarded_unnecessary_stops": 5
+    }
+  },
+  "reload_passed": true,
+  "inference_ms_median": 49.3849478662014,
+  "inference_ms_max": 96.99901985004544,
+  "guarded_metric_note": "Derived with the deployed veto: required local stops remain stops; a model direction that disagrees with current target geometry is stopped. Synthetic labels are local policy imitation, not real driving ground truth.",
+  "lost_target_wait_s": 2.0,
+  "follow_gap_m": 0.5
+}

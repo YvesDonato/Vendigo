@@ -1,0 +1,49 @@
+{
+  "metadata": {
+    "name": "Rules forward / OpenJEV turns",
+    "decision_model": "openjev_follow",
+    "base_revision": "f8187e6e11d413d0771bcc7970b85f78e194264c",
+    "steering_input": "camera-derived person and obstacle state",
+    "training": "Frozen OpenJEV backbone; task head trained on synthetic rule-labelled states",
+    "head_sha256": "91d10b53bca7cdd8625d02e0812a9116f021f743cc9d847a04a132f7bbde8815",
+    "physical_following_validated": false,
+    "turns_only": true
+  },
+  "cases": [
+    {
+      "case": "forward",
+      "direction": "straight",
+      "reason": "Rule-based forward: Following selected feet: straight (estimated 1.0 m; gap 0.5 m).",
+      "model_calls": 0,
+      "ms": 0.03
+    },
+    {
+      "case": "left",
+      "direction": "left",
+      "reason": "OpenJEV tuned head: left; estimated gap 0.5 m.",
+      "model_calls": 1,
+      "ms": 128.23
+    },
+    {
+      "case": "right",
+      "direction": "right",
+      "reason": "OpenJEV tuned head: right; estimated gap 0.5 m.",
+      "model_calls": 1,
+      "ms": 44.87
+    },
+    {
+      "case": "close",
+      "direction": "stop",
+      "reason": "OpenJEV guard: Feet close; holding position (estimated 0.4 m; gap 0.5 m).",
+      "model_calls": 0,
+      "ms": 0.02
+    },
+    {
+      "case": "blocked",
+      "direction": "stop",
+      "reason": "OpenJEV guard: Blocked route",
+      "model_calls": 0,
+      "ms": 0.01
+    }
+  ]
+}

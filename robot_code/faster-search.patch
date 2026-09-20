@@ -1,0 +1,27 @@
+--- a/robot_steering.py
++++ b/robot_steering.py
+@@ -14,6 +14,7 @@
+ TURN_BURST_MS = 200
+ TURN_MIN_BUDGET_MS = 80
+ TURN_SETTLE_SECONDS = .02  # Arrival-time buffer; no wheel encoders/camera capture clock.
++SEARCH_SETTLE_SECONDS = .005
+ 
+ 
+ class WaitingForFrame(ValueError):
+@@ -342,6 +343,7 @@
+ 
+                     if phase == "stopping":
+                         with self.lock:
++                            settle_seconds = SEARCH_SETTLE_SECONDS if self.search_pulse_active else TURN_SETTLE_SECONDS
+                             self.search_pulse_active = False
+                         # stop_robot() intentionally swallows errors; it cannot establish this barrier.
+                         reply = self.request("/stop", {})
+@@ -362,7 +364,7 @@
+                             raise WaitingForRobot("Waiting for stopped motor output after turn")
+                         if self.stop_distance_cm is not None:
+                             self.update_distance(stopped)
+-                        turn_frame_after = time.monotonic() + TURN_SETTLE_SECONDS
++                        turn_frame_after = time.monotonic() + settle_seconds
+                         phase = "observing"
+                         next_probe = time.monotonic() + .1
+ 

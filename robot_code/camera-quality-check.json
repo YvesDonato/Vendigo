@@ -1,0 +1,20 @@
+{
+  "setting": {
+    "camera_jpeg_quality": 20,
+    "previous": 10,
+    "reapplied_on_reconnect": true
+  },
+  "pre_restart": {
+    "samples": 160,
+    "connected": 160,
+    "frames": 1093,
+    "decisions": 256
+  },
+  "post_restart": {
+    "samples": 60,
+    "connected": 60,
+    "frames": 814,
+    "steering_enabled": false
+  },
+  "physical_motion_tested": false
+}

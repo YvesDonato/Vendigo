@@ -12,7 +12,7 @@ export function Purchase({ product, inventory, getSessionId, initialOrder, onClo
   const [phase, setPhase] = useState<"confirm" | "opening" | "tracking" | "error">(initialOrder ? "tracking" : "confirm");
   const [order, setOrder] = useState<Order | null>(initialOrder ?? null);
   const [error, setError] = useState("");
-  const [seconds, setSeconds] = useState(10);
+  const [seconds, setSeconds] = useState(7);
   const orderId = useRef(initialOrder?.id ?? newId());
   const submitting = useRef(false);
   const storageKey = `hawk-order-${inventory.robotId}`;
@@ -22,7 +22,7 @@ export function Purchase({ product, inventory, getSessionId, initialOrder, onClo
     let active = true;
     const check = () => api<Order>(`/api/orders/${orderId.current}`).then((result) => {
       if (active) { setOrder(result); setError(""); }
-    }).catch(() => { if (active) setError("Reconnecting… Hawk will relock automatically."); });
+    }).catch(() => { if (active) setError("Reconnecting… Vendigo will relock automatically."); });
     void check();
     const poll = setInterval(check, 650);
     return () => { active = false; clearInterval(poll); };
@@ -84,7 +84,7 @@ export function Purchase({ product, inventory, getSessionId, initialOrder, onClo
       <span className="eyebrow">Compartment {inventory.compartmentId.toString().padStart(2, "0")}</span>
       <h2>{lockFailed ? "Please ask the operator" : failed ? "Couldn’t unlock" : complete ? "Pickup complete" : unlocked ? "Compartment unlocked" : order?.status === "locking" ? "Closing securely…" : "Opening your compartment…"}</h2>
       <p>{lockFailed || failed ? order?.error : complete ? "Compartment locked. Enjoy!" : `Take your ${product.name}`}</p>
-      {unlocked && <><div className="countdown"><svg viewBox="0 0 100 100" aria-hidden="true"><circle className="countdown-track" cx="50" cy="50" r="43" /><circle className="countdown-progress" cx="50" cy="50" r="43" pathLength="100" strokeDasharray={`${seconds * 10} 100`} /></svg><strong>{seconds}<small>seconds</small></strong></div><span className="countdown-label">Closing in {seconds} seconds</span><small>Take your item, then keep hands clear.</small></>}
+      {unlocked && <><div className="countdown"><svg viewBox="0 0 100 100" aria-hidden="true"><circle className="countdown-track" cx="50" cy="50" r="43" /><circle className="countdown-progress" cx="50" cy="50" r="43" pathLength="100" strokeDasharray={`${seconds / 7 * 100} 100`} /></svg><strong>{seconds}<small>seconds</small></strong></div><span className="countdown-label">Closing in {seconds} seconds</span><small>Take your item, then keep hands clear.</small></>}
       {failed && <button className="button button-primary" onClick={onClose}>Back to storefront</button>}
       {error && <p className="inline-error">{error}</p>}
     </div>}

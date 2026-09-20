@@ -1,0 +1,34 @@
+{
+  "checked_at": "2026-09-19T21:00:51.872766+00:00",
+  "follow_hold_seconds": 1.0,
+  "power_pwm": {
+    "drive": 255,
+    "turn": 255
+  },
+  "front_stop_cm": 50,
+  "checks_passed": [
+    "follow_hold",
+    "front_approach",
+    "person_follow",
+    "ultrasonic_steering",
+    "camera_live",
+    "robot_steering"
+  ],
+  "live_camera_connected": true,
+  "live_clearance_received": true,
+  "live_model_ready": true,
+  "steering_disabled_during_check": true,
+  "physical_movement_tested": false,
+  "lease_change": "Insufficient renewal budget sends no command; existing lease expires naturally. Actual stop decisions still send zero immediately.",
+  "hold_constraints": [
+    "Only a previously acknowledged movement while a target was detected can seed memory.",
+    "The hold expires one second after that detected camera frame; missing frames do not extend it.",
+    "Fresh camera clearance, valid front range above 50 cm, active run and live control link remain required."
+  ],
+  "installed_sha256": {
+    "camera_live.py": "53bb3e33930c75a02bbd4eafd950f263c685b20b9f8f72df82f4cd55689a0164",
+    "robot_steering.py": "cd33b2e14752a1c0bd99514610417083a764d8517f867f95f41bc5aeb881b291",
+    "person_follow.py": "b4fe659b3de40e9adbe3c88c4f763c871c597388086f26fa9b48bfeac7afb1a8",
+    "vlm_reasoner.py": "5513934956da42ad752495be949cc2ff7b854122c0509824b51245e5cbc40056"
+  }
+}

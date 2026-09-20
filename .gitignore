@@ -7,3 +7,17 @@ npm-debug.log*
 .DS_Store
 playwright-report/
 test-results/
+node_modules
+.next
+out
+*.log
+robot_code/backups/
+robot_code/build/
+robot_code/build-lid/
+robot_code/LordBotJev/secrets.h
+robot_code/control.token
+robot_code/lid-api.token
+robot_code/cloudflare-tunnel.token
+robot_code/.cloudflared-bin
+robot_code/backboard.key
+robot_code/__pycache__/

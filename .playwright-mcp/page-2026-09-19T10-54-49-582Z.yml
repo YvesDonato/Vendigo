@@ -1,0 +1,11 @@
+- generic [ref=e1]:
+  - heading "ESP32 / OpenJEV 4B" [level=1] [ref=e2]
+  - paragraph [ref=e3]: Live suggestions only. Robot movement is disabled.
+  - status [ref=e4]: "Camera: Connected | Model: AlexWortega/openjev"
+  - generic [ref=e5]:
+    - figure "Live frame 707 | received 122 ms ago" [ref=e6]:
+      - img "Live ESP32 camera" [ref=e7]
+    - figure "Analyzed frame 701 | age 326 ms | inference 89 ms" [ref=e9]:
+      - img "Camera frame used for the displayed suggestion" [ref=e10]
+  - 'heading "Suggestion: straight" [level=2] [ref=e12]'
+  - paragraph [ref=e13]: "Highest entailment: The visible floor provides an open route straight ahead for the car. Score 0.118 (uncalibrated; not safety confidence)."

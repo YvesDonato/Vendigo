@@ -1,0 +1,567 @@
+{
+  "measured_distance_m": 1.5,
+  "current_median_m": 0.8592058569192886,
+  "mad_m": 0.047455430030822754,
+  "samples": [
+    {
+      "frame": 897,
+      "age": 278,
+      "reason": "Feet close; holding position (estimated 0.8 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.00048828125,
+          0.5765625,
+          0.061328125,
+          0.690625
+        ],
+        "score": 0.3058009743690491,
+        "range_m": 0.8334758877754211,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 904,
+      "age": 244,
+      "reason": "Feet close; holding position (estimated 0.7 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.0,
+          0.5770833333333333,
+          0.05888671875,
+          0.6901041666666666
+        ],
+        "score": 0.37456193566322327,
+        "range_m": 0.7291264981031418,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 909,
+      "age": 274,
+      "reason": "Feet close; holding position (estimated 0.8 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.0003204345703125,
+          0.5713541666666667,
+          0.05673828125,
+          0.6869791666666667
+        ],
+        "score": 0.3186971843242645,
+        "range_m": 0.7880542874336243,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 916,
+      "age": 206,
+      "reason": "Person close; holding position (estimated 1.0 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.3745711088180542,
+          0.02165544033050537,
+          0.7610466003417968,
+          0.6520018259684245
+        ],
+        "score": 0.6771520972251892,
+        "range_m": 0.9633678495883942
+      }
+    },
+    {
+      "frame": 920,
+      "age": 264,
+      "reason": "Feet close; holding position (estimated 0.9 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.437890625,
+          0.621875,
+          0.5375,
+          0.7348958333333333
+        ],
+        "score": 0.3762792944908142,
+        "range_m": 0.9066612869501114,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 928,
+      "age": 204,
+      "reason": "Feet close; holding position (estimated 0.9 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.43671875,
+          0.61875,
+          0.5375,
+          0.734375
+        ],
+        "score": 0.37794238328933716,
+        "range_m": 0.936893880367279,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 931,
+      "age": 277,
+      "reason": "Feet close; holding position (estimated 0.8 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.000213623046875,
+          0.56875,
+          0.051123046875,
+          0.6895833333333333
+        ],
+        "score": 0.2520156800746918,
+        "range_m": 0.827195018529892,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 938,
+      "age": 238,
+      "reason": "Feet close; holding position (estimated 0.9 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.0002593994140625,
+          0.5682291666666667,
+          0.053271484375,
+          0.6927083333333334
+        ],
+        "score": 0.2544163167476654,
+        "range_m": 0.9001049995422363,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 941,
+      "age": 285,
+      "reason": "Feet close; holding position (estimated 0.9 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.437109375,
+          0.6208333333333333,
+          0.5375,
+          0.734375
+        ],
+        "score": 0.3847387433052063,
+        "range_m": 0.8583024442195892,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 949,
+      "age": 202,
+      "reason": "Person close; holding position (estimated 0.9 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.37375783920288086,
+          0.017145204544067382,
+          0.7590327262878418,
+          0.6550805409749348
+        ],
+        "score": 0.6898086667060852,
+        "range_m": 0.9461592733860016
+      }
+    },
+    {
+      "frame": 953,
+      "age": 273,
+      "reason": "Person close; holding position (estimated 0.9 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.3745628833770752,
+          0.01670711040496826,
+          0.7691445827484131,
+          0.6562519073486328
+        ],
+        "score": 0.7405979037284851,
+        "range_m": 0.9257217943668365
+      }
+    },
+    {
+      "frame": 961,
+      "age": 176,
+      "reason": "Feet close; holding position (estimated 0.8 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.43671875,
+          0.6182291666666667,
+          0.53828125,
+          0.734375
+        ],
+        "score": 0.376852422952652,
+        "range_m": 0.8269191980361938,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 964,
+      "age": 272,
+      "reason": "Person close; holding position (estimated 0.9 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.373331880569458,
+          0.014528632164001465,
+          0.7696621417999268,
+          0.6475187937418619
+        ],
+        "score": 0.750068187713623,
+        "range_m": 0.9043206870555878
+      }
+    },
+    {
+      "frame": 969,
+      "age": 295,
+      "reason": "Feet close; holding position (estimated 0.9 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.000152587890625,
+          0.5677083333333334,
+          0.056201171875,
+          0.6953125
+        ],
+        "score": 0.2730894684791565,
+        "range_m": 0.8786804378032684,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 977,
+      "age": 210,
+      "reason": "Feet close; holding position (estimated 0.9 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.43671875,
+          0.6203125,
+          0.53828125,
+          0.734375
+        ],
+        "score": 0.37782758474349976,
+        "range_m": 0.8684337139129639,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 980,
+      "age": 306,
+      "reason": "Feet close; holding position (estimated 0.9 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.43671875,
+          0.61875,
+          0.5375,
+          0.734375
+        ],
+        "score": 0.37079480290412903,
+        "range_m": 0.9266576021909714,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 988,
+      "age": 239,
+      "reason": "Feet close; holding position (estimated 0.8 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.437109375,
+          0.61875,
+          0.5375,
+          0.734375
+        ],
+        "score": 0.3891982436180115,
+        "range_m": 0.8059860467910767,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 992,
+      "age": 278,
+      "reason": "Feet close; holding position (estimated 1.0 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.437109375,
+          0.6192708333333333,
+          0.537109375,
+          0.7333333333333333
+        ],
+        "score": 0.3664763569831848,
+        "range_m": 0.979290321469307,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 998,
+      "age": 251,
+      "reason": "Feet close; holding position (estimated 0.8 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.43671875,
+          0.61875,
+          0.53671875,
+          0.734375
+        ],
+        "score": 0.38144996762275696,
+        "range_m": 0.8499308228492737,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 1001,
+      "age": 288,
+      "reason": "Feet close; holding position (estimated 0.8 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.4375,
+          0.6192708333333333,
+          0.537109375,
+          0.7338541666666667
+        ],
+        "score": 0.3968859910964966,
+        "range_m": 0.8392870873212814,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 1008,
+      "age": 198,
+      "reason": "Feet close; holding position (estimated 0.9 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.435546875,
+          0.6213541666666667,
+          0.537109375,
+          0.734375
+        ],
+        "score": 0.3839299976825714,
+        "range_m": 0.9082477241754532,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 1011,
+      "age": 260,
+      "reason": "Feet close; holding position (estimated 0.9 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.437890625,
+          0.6203125,
+          0.5375,
+          0.7338541666666667
+        ],
+        "score": 0.3883860111236572,
+        "range_m": 0.8883381336927414,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 1016,
+      "age": 237,
+      "reason": "Feet close; holding position (estimated 0.8 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.43671875,
+          0.6166666666666667,
+          0.5375,
+          0.7338541666666667
+        ],
+        "score": 0.3812195360660553,
+        "range_m": 0.7850185632705688,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 1019,
+      "age": 283,
+      "reason": "Feet close; holding position (estimated 0.8 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.4375,
+          0.6192708333333333,
+          0.5375,
+          0.7338541666666667
+        ],
+        "score": 0.3718206584453583,
+        "range_m": 0.8075719177722931,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 1024,
+      "age": 219,
+      "reason": "Feet close; holding position (estimated 0.8 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.437109375,
+          0.6197916666666666,
+          0.537109375,
+          0.734375
+        ],
+        "score": 0.3774259090423584,
+        "range_m": 0.7551547288894653,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 1027,
+      "age": 256,
+      "reason": "Feet close; holding position (estimated 0.8 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.4375,
+          0.61875,
+          0.53828125,
+          0.734375
+        ],
+        "score": 0.3883860111236572,
+        "range_m": 0.7845706939697266,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 1034,
+      "age": 173,
+      "reason": "Feet close; holding position (estimated 0.9 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.43671875,
+          0.61875,
+          0.5359375,
+          0.734375
+        ],
+        "score": 0.39245325326919556,
+        "range_m": 0.892002284526825,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 1037,
+      "age": 232,
+      "reason": "Feet close; holding position (estimated 0.8 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.4359375,
+          0.6192708333333333,
+          0.53671875,
+          0.734375
+        ],
+        "score": 0.37874627113342285,
+        "range_m": 0.7741560339927673,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 1041,
+      "age": 288,
+      "reason": "Feet close; holding position (estimated 0.8 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.43671875,
+          0.6192708333333333,
+          0.5359375,
+          0.7338541666666667
+        ],
+        "score": 0.3842187523841858,
+        "range_m": 0.8256533443927765,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 1049,
+      "age": 208,
+      "reason": "Feet close; holding position (estimated 0.7 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.43671875,
+          0.6197916666666666,
+          0.535546875,
+          0.7333333333333333
+        ],
+        "score": 0.3846231698989868,
+        "range_m": 0.7440440803766251,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 1052,
+      "age": 305,
+      "reason": "Feet close; holding position (estimated 0.8 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.000274658203125,
+          0.5729166666666666,
+          0.05166015625,
+          0.6979166666666666
+        ],
+        "score": 0.2617081105709076,
+        "range_m": 0.7508716434240341,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 1060,
+      "age": 199,
+      "reason": "Feet close; holding position (estimated 0.9 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.4359375,
+          0.61875,
+          0.53671875,
+          0.734375
+        ],
+        "score": 0.3758210241794586,
+        "range_m": 0.8920081853866577,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 1064,
+      "age": 255,
+      "reason": "Feet close; holding position (estimated 0.9 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.437890625,
+          0.6203125,
+          0.5359375,
+          0.7338541666666667
+        ],
+        "score": 0.3901272416114807,
+        "range_m": 0.8662272244691849,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 1070,
+      "age": 213,
+      "reason": "Feet close; holding position (estimated 0.9 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.43671875,
+          0.6197916666666666,
+          0.5359375,
+          0.734375
+        ],
+        "score": 0.3797808587551117,
+        "range_m": 0.8592058569192886,
+        "kind": "feet"
+      }
+    },
+    {
+      "frame": 1073,
+      "age": 258,
+      "reason": "Feet close; holding position (estimated 0.9 m; gap 1.0 m).",
+      "target": {
+        "box": [
+          0.43515625,
+          0.6177083333333333,
+          0.53671875,
+          0.734375
+        ],
+        "score": 0.3879801034927368,
+        "range_m": 0.8859369605779648,
+        "kind": "feet"
+      }
+    }
+  ],
+  "recommended_follow_distance_scale": 1.7457981552619999,
+  "applied_follow_distance_scale": 1.75,
+  "scope": "target distances only; obstacle depth calibration unchanged",
+  "limitation": "One user-measured point; accuracy at other distances and scenes unverified."
+}

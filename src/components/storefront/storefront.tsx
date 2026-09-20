@@ -57,7 +57,7 @@ export function Storefront({ robotId }: { robotId: string }) {
   if (!robot) return <main className="loading-screen"><Brand /><h1>Storefront not found</h1><p>Check the QR code and try again.</p><Link className="button button-primary" href="/shop/robot-001">Open storefront <ArrowRight size={17} /></Link></main>;
   const inventory = state.inventory.filter((i) => i.robotId === robotId);
   const available = robot.status === "available" && !error;
-  const unavailableReason = robot.status === "selling" ? "Pickup in progress. Please wait a moment." : robot.status === "returning" ? "Hawk is returning to base. Purchases are paused." : robot.status === "stopped" ? "Purchases are paused by the operator." : null;
+  const unavailableReason = robot.status === "selling" ? "Pickup in progress. Please wait a moment." : robot.status === "returning" ? "Vendigo is returning to base. Purchases are paused." : robot.status === "stopped" ? "Purchases are paused by the operator." : null;
 
   return <div className="storefront">
     <header className="shop-header"><Brand href={`/shop/${robotId}`} /></header>
@@ -66,7 +66,7 @@ export function Storefront({ robotId }: { robotId: string }) {
         <h1>Drinks & snacks.</h1>
         <p>Pick an item. Tap to unlock.</p>
       </section>
-      {error && <div className="connection-banner" role="status">Connection lost. Reconnecting to Hawk…</div>}
+      {error && <div className="connection-banner" role="status">Connection lost. Reconnecting to Vendigo…</div>}
       {!error && unavailableReason && !selected && <div className="connection-banner" role="status">{unavailableReason}</div>}
       <section className="shop-products" id="products" aria-label="Products">
         <div className="product-tabs" aria-label="Product categories">{(["all", "drinks", "snacks"] as const).map((tab) => <button key={tab} aria-pressed={category === tab} className={category === tab ? "active" : ""} onClick={() => setCategory(tab)}>{tab === "all" ? "All" : tab === "drinks" ? "Drinks" : "Snacks"}</button>)}</div>

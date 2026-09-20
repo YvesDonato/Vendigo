@@ -1,0 +1,37 @@
+--- a/robot_steering.py
++++ b/robot_steering.py
+@@ -50,8 +50,22 @@
+ 
+ 
+ def following_intent(result, sensor):
++    tracking = result.get("tracking")
++    if isinstance(tracking, dict) and tracking.get("target") is None and tracking.get("people") == []:
++        # Current empty-scene evidence, not a remembered direction or a missing camera.
++        clear = "straight" in result.get("clear_motion_options", [])
++        ready = sensor is not None and front_reading_ready(sensor)
++        cutoff = None if sensor is None else sensor.get("stop_distance_cm")
++        advance = (clear and ready and type(cutoff) is int and 10 <= cutoff <= 100
++                   and sensor["distance_cm"] > cutoff and sensor.get("distance_blocked") is False)
++        reason = ("No person detected; moving straight along the currently clear path." if advance else
++                  "No person detected; forward camera clearance unavailable." if not clear else
++                  "No person detected; waiting for fresh front-distance clearance.")
++        if clear and ready and type(cutoff) is int and sensor["distance_cm"] <= cutoff:
++            reason = f"No person detected; front object at {sensor['distance_cm']:.1f} cm, stop at {cutoff} cm."
++        return dict(result, direction="straight" if advance else "stop", source="empty_path",
++                    model_direction=result["direction"], reason=reason)
+     decision = front_approach(result, sensor)
+-    tracking = result.get("tracking")
+     if (not sensor or not sensor.get("enabled") or not isinstance(tracking, dict)
+             or tracking.get("target") is not None):
+         return decision
+--- a/camera_live.py
++++ b/camera_live.py
+@@ -309,7 +309,7 @@
+ p,figcaption{line-height:1.6;color:#bacbd9}#action{font-size:1.5rem;color:#91e6cf}.stale{color:#ffcc80!important}
+ button{font:inherit;padding:.7rem 1rem;border:0;border-radius:6px;margin-right:.6rem;cursor:pointer}button:disabled{opacity:.45;cursor:default}#stop{background:#b42318;color:white}
+ </style><h1 id="heading">ESP32 / Robot camera</h1><p>Live camera decisions. Steering starts disabled.</p>
+-<section id="steering" hidden><button id="arm" type="button">Start automatic steering</button><button id="stop" type="button">Stop</button><p>Runs until you press Stop, including when you switch tabs. Brief video or control-link interruptions pause movement; recovery within two seconds can resume it. A model stop also pauses movement.</p><p id="robot" role="status"></p></section>
++<section id="steering" hidden><button id="arm" type="button">Start automatic steering</button><button id="stop" type="button">Stop</button><p>Runs until you press Stop, including when you switch tabs. In person-following mode, no person detected means straight ahead while the camera and front sensor show a clear path. Obstacles or missing camera/sensor data pause movement. Brief video or control-link interruptions can recover within two seconds.</p><p id="robot" role="status"></p></section>
+ <p id="distance" role="status" hidden></p><p id="status" role="status">Connecting...</p><h2 id="action" aria-live="polite">No current suggestion</h2><p id="reason"></p><div class="views">
+ <figure><img id="live" alt="Live ESP32 camera"><figcaption id="frame">Waiting for camera</figcaption></figure>
+ <figure><div class="observed"><img id="observed" alt="Camera frame used for the displayed suggestion"><svg id="people" viewBox="0 0 1 1" preserveAspectRatio="none" aria-label="Detected people; green box marks the target"></svg></div><figcaption id="analyzed">Waiting for inference</figcaption></figure>

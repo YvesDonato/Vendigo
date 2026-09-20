@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "Hawk-2-U — Commerce that comes to you.", template: "%s | Hawk-2-U" },
+  title: { default: "Vendigo — Commerce that comes to you.", template: "%s | Vendigo" },
   description: "Your autonomous storefront has arrived. Cold drinks, good snacks, and a little break, right where you are.",
-  applicationName: "Hawk-2-U",
+  applicationName: "Vendigo",
 };
 
 export const viewport: Viewport = {

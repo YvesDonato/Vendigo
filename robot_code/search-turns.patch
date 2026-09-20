@@ -1,0 +1,282 @@
+--- a/robot_steering.py
++++ b/robot_steering.py
+@@ -51,20 +51,25 @@
+ 
+ def following_intent(result, sensor):
+     tracking = result.get("tracking")
+-    if isinstance(tracking, dict) and tracking.get("target") is None and tracking.get("people") == []:
+-        # Current empty-scene evidence, not a remembered direction or a missing camera.
+-        clear = "straight" in result.get("clear_motion_options", [])
+-        ready = sensor is not None and front_reading_ready(sensor)
+-        cutoff = None if sensor is None else sensor.get("stop_distance_cm")
+-        advance = (clear and ready and type(cutoff) is int and 10 <= cutoff <= 100
+-                   and sensor["distance_cm"] > cutoff and sensor.get("distance_blocked") is False)
+-        reason = ("No person detected; moving straight along the currently clear path." if advance else
+-                  "No person detected; forward camera clearance unavailable." if not clear else
+-                  "No person detected; waiting for fresh front-distance clearance.")
+-        if clear and ready and type(cutoff) is int and sensor["distance_cm"] <= cutoff:
+-            reason = f"No person detected; front object at {sensor['distance_cm']:.1f} cm, stop at {cutoff} cm."
+-        return dict(result, direction="straight" if advance else "stop", source="empty_path",
+-                    model_direction=result["direction"], reason=reason)
++    remaining = None if sensor is None else sensor.get("search_remaining_s")
++    if (sensor and sensor.get("enabled") and isinstance(tracking, dict)
++            and tracking.get("target") is None and remaining is not None):
++        clear = result.get("clear_motion_options", [])
++        if remaining > 0 or sensor.get("search_pulse_active"):
++            direction = sensor.get("search_direction") or result["direction"]
++            direction = direction if direction in {"left", "right"} and direction in clear else "stop"
++            return dict(result, direction=direction, source="search_scan", model_direction=result["direction"],
++                        reason=f"Searching for the person: up to {remaining / sensor['search_rotation_seconds']:.2f} estimated turns remaining.")
++        direction = result.get("clear_path_direction", "stop")
++        if direction not in clear:
++            direction = "stop"
++        if direction == "straight":
++            cutoff = sensor.get("stop_distance_cm")
++            if (not front_reading_ready(sensor) or type(cutoff) is not int or not 10 <= cutoff <= 100
++                    or sensor["distance_cm"] <= cutoff or sensor.get("distance_blocked") is not False):
++                direction = "stop"
++        return dict(result, direction=direction, source="clear_path", model_direction=result["direction"],
++                    reason="Two-turn search finished; taking the clearest visible path: " + direction + ".")
+     decision = front_approach(result, sensor)
+     if (not sensor or not sensor.get("enabled") or not isinstance(tracking, dict)
+             or tracking.get("target") is not None):
+@@ -96,10 +101,14 @@
+         raise WaitingForFrame("Camera decision expired; waiting for a fresh frame")
+     steering = getattr(relay, "steering", None)
+     if steering is not None:
+-        result = following_intent(result, steering.snapshot())
++        steering.observe_target(frame, result)
++        sensor = steering.snapshot()
++        result = following_intent(result, sensor)
+     if result["direction"] == "stop":
+         return "stop", 200, frame.id
+     lease = min(200, math.floor((deadline - now - REQUEST_TIMEOUT) * 1000))
++    if result.get("source") == "search_scan":
++        lease = min(lease, math.floor(sensor["search_remaining_s"] * 1000))
+     if lease < 40:
+         # A zero-PWM renewal here cuts short an otherwise valid movement lease.
+         # Send nothing until new evidence arrives; the device watchdog still expires.
+@@ -114,7 +123,7 @@
+ 
+ 
+ class RobotSteering:
+-    def __init__(self, relay, url, token, speed=160, turn_speed=160, stop_distance_cm=None):
++    def __init__(self, relay, url, token, speed=160, turn_speed=160, stop_distance_cm=None, search_rotation_seconds=None):
+         parsed = urlsplit(url)
+         if (parsed.scheme != "http" or not parsed.hostname or parsed.username or parsed.password
+                 or parsed.path not in {"", "/"} or parsed.query or parsed.fragment):
+@@ -125,6 +134,14 @@
+             raise ValueError("Expected a 64-character private control token")
+         if stop_distance_cm is not None and (type(stop_distance_cm) is not int or not 10 <= stop_distance_cm <= 100):
+             raise ValueError("Ultrasonic stop distance must be 10-100 cm")
++        if search_rotation_seconds is not None and (type(search_rotation_seconds) not in (int, float)
++                or not math.isfinite(search_rotation_seconds) or not .2 <= search_rotation_seconds <= 60):
++            raise ValueError("Measured full-turn motor time must be 0.2-60 seconds")
++        self.search_rotation_seconds = search_rotation_seconds
++        self.search_used_s = 0.
++        self.search_pulse_active = False
++        self.search_direction = self.search_frame = None
++        self.search_target_visible = False
+         self.relay, self.url, self.token = relay, url.rstrip("/"), token
+         self.speed, self.turn_speed = speed, turn_speed
+         self.opener = build_opener(ProxyHandler({}))
+@@ -181,6 +198,9 @@
+                     raise ValueError("Automatic steering is already enabled")
+                 self.enabled = True
+                 self.follow_direction = self.follow_seen = None
++                self.search_used_s = 0.
++                self.search_direction = self.search_frame = None
++                self.search_target_visible = False
+                 self.revision += 1
+                 self.message = "Enabling steering"
+         elif action == "stop":
+@@ -188,6 +208,9 @@
+                 self.enabled = False
+                 self.follow_direction = self.follow_seen = None
+                 self.direction = "stop"
++                self.search_used_s = 0.
++                self.search_direction = self.search_frame = None
++                self.search_target_visible = False
+                 self.revision += 1
+                 self.message = "Steering disabled"
+         elif action == "heartbeat":
+@@ -220,16 +243,37 @@
+     def stop_robot(self):
+         with self.lock:
+             self.follow_direction = self.follow_seen = None
++            self.search_pulse_active = False
+         try:
+             self.request("/stop", {})
+         except Exception:
+             # Device watchdog independently expires the lease within 200 ms.
+             pass
+ 
++    def observe_target(self, frame, result):
++        # Only drive_intent calls this, after freshness validation; UI polls are pure.
++        with self.lock:
++            if not self.enabled or self.search_rotation_seconds is None:
++                return
++            key = (frame.generation, frame.id)
++            if self.search_frame is not None and key <= self.search_frame:
++                return
++            self.search_frame = key
++            tracking = result.get("tracking")
++            self.search_target_visible = isinstance(tracking, dict) and tracking.get("target") is not None
++            if self.search_target_visible:
++                self.search_used_s = 0.
++                self.search_direction = None
++
+     def snapshot(self):
+         with self.lock:
+             elapsed = None if self.distance_received is None else max(0, time.monotonic() - self.distance_received)
++            remaining = None if self.search_rotation_seconds is None else max(0., 2 * self.search_rotation_seconds - self.search_used_s)
++            if remaining is not None and remaining < TURN_MIN_BUDGET_MS / 1000:
++                remaining = 0.  # Do not attempt a final pulse too short to turn the wheels.
+             return dict(enabled=self.enabled, connected=self.connected, direction=self.direction,
++                        search_rotation_seconds=self.search_rotation_seconds, search_remaining_s=remaining,
++                        search_direction=self.search_direction, search_pulse_active=self.search_pulse_active,
+                         turn_phase=self.turn_phase,
+                         message=self.message, frame_id=self.last_frame_id,
+                         distance_cm=self.distance_cm,
+@@ -297,6 +341,8 @@
+                         waiting_since = time.monotonic()
+ 
+                     if phase == "stopping":
++                        with self.lock:
++                            self.search_pulse_active = False
+                         # stop_robot() intentionally swallows errors; it cannot establish this barrier.
+                         reply = self.request("/stop", {})
+                         session = None
+@@ -413,6 +459,16 @@
+                     turn_frame_after = None
+                     speed = 0 if direction == "stop" else self.speed if direction == "straight" else self.turn_speed
+                     sequence += 1
++                    with self.lock:
++                        if (self.search_rotation_seconds is not None and not self.search_target_visible
++                                and direction in {"left", "right"}
++                                and 2 * self.search_rotation_seconds - self.search_used_s >= TURN_MIN_BUDGET_MS / 1000):
++                            self.search_direction = direction
++                            self.search_pulse_active = True
++                            # ponytail: commanded motor time estimates yaw; wheel slip/battery changes
++                            # need recalibration, or an IMU for measured full rotations.
++                            # Charge even an unacknowledged command so retries cannot extend the scan.
++                            self.search_used_s += lease / 1000
+                     reply = self.request("/drive", dict(session=session, sequence=sequence,
+                                          direction=direction, speed=speed, lease_ms=lease))
+                     if reply.get("ok") is not True:
+--- a/camera_live.py
++++ b/camera_live.py
+@@ -230,6 +230,9 @@
+                 if (getattr(self.args, "follow_person", False) and getattr(self.args, "stop_distance_cm", None) is not None
+                         and reasoner.metadata.get("clear_motion_options_version") != 1):
+                     raise ValueError("Remote follower does not support current-scene clearance during detection loss")
++                if (getattr(self.args, "search_rotation_seconds", None) is not None
++                        and reasoner.metadata.get("clear_path_direction_version") != 1):
++                    raise ValueError("Remote follower does not support clear-path selection after searching")
+                 with self.condition:
+                     self.reasoner = reasoner
+                     self.model_ready = True
+@@ -309,7 +312,7 @@
+ p,figcaption{line-height:1.6;color:#bacbd9}#action{font-size:1.5rem;color:#91e6cf}.stale{color:#ffcc80!important}
+ button{font:inherit;padding:.7rem 1rem;border:0;border-radius:6px;margin-right:.6rem;cursor:pointer}button:disabled{opacity:.45;cursor:default}#stop{background:#b42318;color:white}
+ </style><h1 id="heading">ESP32 / Robot camera</h1><p>Live camera decisions. Steering starts disabled.</p>
+-<section id="steering" hidden><button id="arm" type="button">Start automatic steering</button><button id="stop" type="button">Stop</button><p>Runs until you press Stop, including when you switch tabs. In person-following mode, no person detected means straight ahead while the camera and front sensor show a clear path. Obstacles or missing camera/sensor data pause movement. Brief video or control-link interruptions can recover within two seconds.</p><p id="robot" role="status"></p></section>
++<section id="steering" hidden><button id="arm" type="button">Start automatic steering</button><button id="stop" type="button">Stop</button><p>Runs until you press Stop, including when you switch tabs. If the person disappears, waits briefly, then searches for up to two estimated full turns. Finding a person ends the search early. If nobody is found, takes the clearest currently visible path. Turn count uses calibrated motor time; wheel slip can affect it. Obstacles or missing camera/sensor data prevent forward movement. Brief video or control-link interruptions can recover within two seconds.</p><p id="robot" role="status"></p></section>
+ <p id="distance" role="status" hidden></p><p id="status" role="status">Connecting...</p><h2 id="action" aria-live="polite">No current suggestion</h2><p id="reason"></p><div class="views">
+ <figure><img id="live" alt="Live ESP32 camera"><figcaption id="frame">Waiting for camera</figcaption></figure>
+ <figure><div class="observed"><img id="observed" alt="Camera frame used for the displayed suggestion"><svg id="people" viewBox="0 0 1 1" preserveAspectRatio="none" aria-label="Detected people; green box marks the target"></svg></div><figcaption id="analyzed">Waiting for inference</figcaption></figure>
+@@ -457,10 +460,13 @@
+     parser.add_argument("--robot-token-file", type=Path, help="Private robot control token file")
+     parser.add_argument("--drive-speed", type=int, default=160, help="Forward PWM, 1-255")
+     parser.add_argument("--turn-speed", type=int, default=160, help="Turn PWM, 1-255")
++    parser.add_argument("--search-rotation-seconds", type=float, help="Measured powered turn time for 360 degrees; enables a two-turn search then clear-path travel")
+     parser.add_argument("--stop-distance-cm", type=int, help="Require the kit ultrasonic sensor; forward cutoff in cm, 10-100")
+     parser.add_argument("--min-route-entailment", type=float,
+                         help="Optional image-score cutoff, (0,1]; omitted by default for original direction ranking")
+     args = parser.parse_args()
++    if args.search_rotation_seconds is not None and (not args.follow_person or args.stop_distance_cm is None):
++        parser.error("Two-turn search requires person following and the front distance sensor")
+     if args.camera_jpeg_quality is not None:
+         try:
+             camera_quality_url(args.camera_url, args.camera_jpeg_quality)
+@@ -499,7 +505,7 @@
+         from robot_steering import RobotSteering
+         try:
+             relay.steering = RobotSteering(relay, args.robot_url, args.robot_token_file.read_text().strip(),
+-                                          args.drive_speed, args.turn_speed, args.stop_distance_cm)
++                                          args.drive_speed, args.turn_speed, args.stop_distance_cm, args.search_rotation_seconds)
+         except (ValueError, OSError) as error:
+             parser.error(str(error))
+     with ThreadingHTTPServer(("127.0.0.1", args.port), Handler) as server:
+--- a/person_follow.py
++++ b/person_follow.py
+@@ -83,6 +83,24 @@
+         return ["stop"]
+     clear = scene_motion_options(observation, now) if clear is None else clear
+     return clear if tracking["target"] is not None else [d for d in clear if d in ("stop", decision["direction"])]
++
++
++def clearest_direction(observation, now, preferred="left"):
++    """Rank the currently visible sectors, preserving the existing motion veto."""
++    clear = scene_motion_options(observation, now)
++    points = observation.points
++    angles = np.arctan2(points[:, 1], points[:, 0])
++    sectors = {"left": angles > .35, "straight": np.abs(angles) <= .35, "right": angles < -.35}
++    scores = {direction: min(4., float(np.linalg.norm(points[mask], axis=1).min())) if mask.any() else 4.
++              for direction, mask in sectors.items() if direction in clear}
++    if not scores:
++        return "stop"
++    # Prefer forward and a consistent side when estimated clearances are similar.
++    best = max(scores.values())
++    for direction in ("straight", preferred, "left", "right"):
++        if direction in scores and scores[direction] >= .9 * best:
++            return direction
++
+ 
+ def select_people(boxes, scores, labels, depth, kind="person", track_ids=None):
+     if kind not in ("person", "feet"):
+@@ -234,6 +252,7 @@
+         self.metadata = dict(name="YOLO26s + BoT-SORT / rule-based following", backend="person_follow", input_kind="rgb", motion_options_version=1,
+                              front_approach_version=1,
+                              clear_motion_options_version=1,
++                             clear_path_direction_version=1,
+                              detector="Ultralytics YOLO26s", detector_sha256=WEIGHTS_SHA256,
+                              tracker="BoT-SORT with camera-motion compensation", tracking_ids_version=1,
+                              horizontal_enter=[.34, .66], horizontal_exit=[.38, .62], body_id_memory_s=LOST_WAIT_SECONDS,
+@@ -397,6 +416,7 @@
+         now = time.monotonic()
+         self.front_approach_clear = front_approach_allowed(self.tracking, observation, now, self.horizontal_intent)
+         self.clear_motion_options = scene_motion_options(observation, now)
++        self.clear_path_direction = clearest_direction(observation, now, self.search_direction)
+         self.motion_options = guarded_motion_options(decision, self.tracking, observation, now, self.clear_motion_options)
+         if observation.error or not 0 <= now - started <= self.guard.calibration.max_age:
+             decision = dict(direction="stop", reason="Camera distance estimate unavailable or too old; movement paused.")
+@@ -407,5 +427,6 @@
+             if time.monotonic() - started > self.guard.calibration.max_age:
+                 self.front_approach_clear = False
+                 self.clear_motion_options = ["stop"]
++                self.clear_path_direction = "stop"
+                 decision = dict(direction="stop", reason="OpenJEV decision exceeded the camera freshness limit.")
+         return decision
+--- a/vlm_reasoner.py
++++ b/vlm_reasoner.py
+@@ -223,6 +223,11 @@
+                     result["front_approach_clear"] = clear
+                 if self.metadata.get("clear_motion_options_version") == 1:
+                     result["clear_motion_options"] = validate_motion_options(reply.get("clear_motion_options"))
++                if self.metadata.get("clear_path_direction_version") == 1:
++                    direction = reply.get("clear_path_direction")
++                    if not isinstance(direction, str) or direction not in result.get("clear_motion_options", []):
++                        raise ValueError("Invalid clear-path direction")
++                    result["clear_path_direction"] = direction
+             return result
+         except Exception:
+             # A timed-out answer must never be mistaken for the next observation.
+@@ -373,6 +378,7 @@
+                 reply["motion_options"] = model.motion_options
+                 reply["front_approach_clear"] = model.front_approach_clear
+                 reply["clear_motion_options"] = model.clear_motion_options
++                reply["clear_path_direction"] = model.clear_path_direction
+         except Exception as error:
+             reply = {"ok": False, "error": f"{type(error).__name__}: {error}"}
+         print(json.dumps(reply, allow_nan=False), file=protocol, flush=True)

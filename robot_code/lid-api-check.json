@@ -1,0 +1,22 @@
+{
+  "public_url": "https://vendi.yvesdonato.com/api/v1/lid",
+  "public_status": {
+    "commanded_state": "closed",
+    "commanded_angle": 180,
+    "enabled": true,
+    "position_feedback": false
+  },
+  "unauthenticated_status": 401,
+  "invalid_command_status": 400,
+  "unpublished_paths_status": 404,
+  "openapi_status": 200,
+  "same_position_command_verified": true,
+  "physical_motion_tested": false,
+  "build": "passed",
+  "lint": "passed",
+  "unit_tests": "passed",
+  "credential_files_ignored": true,
+  "credential_files_mode": "0600",
+  "credentials_excluded_from_build": true,
+  "lid_firmware_and_driving_code_unchanged": true
+}

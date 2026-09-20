@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { createSeed } from "../demo-data.ts";
-import { simulatedHardware, type RobotHardware } from "../robot/hardware.ts";
+import { robotHardware, type RobotHardware } from "../robot/hardware.ts";
 import type { AppSnapshot, Order, RobotCommand } from "../../types/index.ts";
 
 export class AppError extends Error {
@@ -23,7 +23,7 @@ export class DemoStore {
   private hardware: RobotHardware;
   private duration: number;
 
-  constructor(hardware = simulatedHardware, unlockDurationMs = 10_000) {
+  constructor(hardware = robotHardware, unlockDurationMs = 7_000) {
     this.hardware = hardware;
     this.duration = unlockDurationMs;
   }
@@ -77,7 +77,7 @@ export class DemoStore {
       return structuredClone(previous);
     }
     const robot = this.robot(input.robotId);
-    if (robot.status !== "available" || this.busy.has(robot.id)) throw new AppError("Hawk is busy right now. Please try again in a moment.", 409);
+    if (robot.status !== "available" || this.busy.has(robot.id)) throw new AppError("Vendigo is busy right now. Please try again in a moment.", 409);
     const item = this.state.inventory.find((i) => i.robotId === robot.id && i.productId === input.productId);
     if (!item || item.compartmentId !== input.compartmentId) throw new AppError("That product and compartment do not match.");
     if (item.stock < 1) throw new AppError("That item just sold out. Please choose another.", 409);
@@ -159,9 +159,9 @@ export class DemoStore {
       await this.hardware.stopRobot(robotId);
       return;
     }
-    if (this.busy.has(robotId)) throw new AppError("Wait for the open compartment to relock before moving Hawk.", 409);
+    if (this.busy.has(robotId)) throw new AppError("Wait for the open compartment to relock before moving Vendigo.", 409);
     if (command === "unlock") {
-      if (robot.status === "returning") throw new AppError("Stop Hawk before opening a compartment.", 409);
+      if (robot.status === "returning") throw new AppError("Stop Vendigo before opening a compartment.", 409);
       const item = this.state.inventory.find((i) => i.robotId === robotId && i.compartmentId === compartmentId);
       if (!item) throw new AppError("Choose a valid compartment.");
       return this.open({ id: randomUUID(), robotId, productId: null, compartmentId: item.compartmentId, sessionId: "operator", locationId: robot.locationId, status: "opening", closesAt: null, error: null });

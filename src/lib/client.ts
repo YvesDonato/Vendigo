@@ -7,7 +7,7 @@ export async function api<T>(path: string, body?: unknown): Promise<T> {
     signal: AbortSignal.timeout(12_000),
   });
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error ?? "Unable to reach Hawk. Please try again.");
+  if (!response.ok) throw new Error(data.error ?? "Unable to reach Vendigo. Please try again.");
   return data as T;
 }
 

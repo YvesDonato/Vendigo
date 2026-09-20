@@ -1,0 +1,13 @@
+{
+  "purchase_open_command": 0,
+  "timer_close_command": 180,
+  "configured_timer_seconds": 10,
+  "observed_cycle_seconds": 11.0,
+  "order_status": "completed",
+  "no_browser_requests_during_timer": true,
+  "one_sale_recorded": true,
+  "wheels_stayed_stopped": true,
+  "physical_position_feedback": false,
+  "storefront_url": "http://localhost:3000/shop/robot-001",
+  "storefront_ready": true
+}

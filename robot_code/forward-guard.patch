@@ -1,0 +1,51 @@
+--- a/robot_steering.py
++++ b/robot_steering.py
+@@ -36,18 +36,22 @@
+ 
+ 
+ def front_approach(result, sensor):
+-    """Use measured front range for a current centred-person approach."""
+-    if (result.get("direction") in {"left", "right"} or result.get("front_approach_clear") is not True
++    """Gate all forward motion on sonar; use it to approach a centred person."""
++    approach = result.get("front_approach_clear") is True
++    if (result.get("direction") in {"left", "right"}
++            or (not approach and result.get("direction") != "straight")
+             or not sensor or sensor.get("stop_distance_cm") is None):
+         return result
+     cm, cutoff = sensor.get("distance_cm"), sensor["stop_distance_cm"]
+     ready = front_reading_ready(sensor)
+     advance = ready and cm > cutoff and sensor.get("distance_blocked") is False
++    if not approach and advance:
++        return result
+     reason = (f"Centred-person approach: front sensor {cm:.1f} cm; stop at {cutoff} cm."
+               if advance else f"Reached the {cutoff} cm front gap; holding position."
+               if ready and cm <= cutoff else "Waiting for a fresh front-distance reading.")
+     return dict(result, direction="straight" if advance else "stop", reason=reason,
+-                source="ultrasonic_approach", model_direction=result["direction"])
++                source="ultrasonic_approach" if approach else "ultrasonic_guard", model_direction=result["direction"])
+ 
+ 
+ def following_intent(result, sensor):
+--- a/camera_live.py
++++ b/camera_live.py
+@@ -331,16 +331,17 @@
+  if(!state)return;
+  const elapsed=performance.now()-received,d=state.decision;
+  const s=state.steering;
++ const frontFresh=s?.connected&&s.distance_cm!=null&&s.distance_age_ms+elapsed<=200;
+  if(s)el('robot').textContent=`Robot ${s.connected?'connected':'disconnected'} | ${s.message}`;
+  el('distance').hidden=s?.stop_distance_cm==null;
+  if(s?.stop_distance_cm!=null){
+-  const fresh=s.connected&&s.distance_cm!=null&&s.distance_age_ms+elapsed<=500;
+-  el('distance').textContent=`Front sensor: ${fresh?s.distance_cm.toFixed(1)+' cm':'reading unavailable or stale'} | Forward stop: ${s.stop_distance_cm} cm`;
++  el('distance').textContent=`Front sensor: ${frontFresh?s.distance_cm.toFixed(1)+' cm':'reading unavailable or stale'} | Forward stop: ${s.stop_distance_cm} cm`;
+  }
+  if(state.image)el('frame').textContent=`Live frame ${state.frame_id} | received ${Math.round(state.frame_age_ms+elapsed)} ms ago`;
+  if(d){const ms=Math.round(d.frame_age_ms+elapsed),stale=d.stale||ms>state.max_frame_age_ms;
+   el('analyzed').textContent=`Analyzed frame ${d.frame_id} | age ${ms} ms | inference ${Math.round(d.latency_s*1000)} ms`+(stale?' | expired; waiting for update':'');el('analyzed').className=stale?'stale':'';
+-  const text='Steering suggestion: '+d.direction;if(el('action').textContent!==text)el('action').textContent=text;el('action').className='';}
++  const forwardBlocked=d.direction==='straight'&&s?.stop_distance_cm!=null&&(!frontFresh||s.distance_blocked||s.distance_cm<=s.stop_distance_cm);
++  const text=forwardBlocked?'Forward paused: waiting for front-sensor clearance':'Steering suggestion: '+d.direction;if(el('action').textContent!==text)el('action').textContent=text;el('action').className=forwardBlocked?'stale':'';}
+  // The host checks its newest frame when Start is clicked. Browser polling age
+  // must not make Start flash while the host continues receiving fresh decisions.
+  el('arm').disabled=!state.steering?.connected||state.steering?.enabled||!state.model_ready||!d;

@@ -1,0 +1,76 @@
+{
+  "configuration": {
+    "follow_gap_m": 0.25,
+    "front_stop_cm": 25,
+    "drive_pwm": 255,
+    "turn_pwm": 255,
+    "turn_burst_ms": 120,
+    "minimum_turn_budget_ms": 80,
+    "settle_ms": 80
+  },
+  "replay": {
+    "before": {
+      "frames": 99,
+      "target_frames": 99,
+      "body_id_switches": 0,
+      "direction_changes": 2,
+      "turn_without_target_s": 0,
+      "median_ms": 81.2,
+      "directions": {
+        "straight": 87,
+        "left": 12
+      }
+    },
+    "smooth": {
+      "frames": 99,
+      "target_frames": 99,
+      "body_id_switches": 0,
+      "direction_changes": 2,
+      "turn_without_target_s": 0,
+      "median_ms": 81.7,
+      "directions": {
+        "straight": 87,
+        "left": 12
+      }
+    }
+  },
+  "synthetic_jitter_direction_changes": {
+    "before": 7,
+    "after": 3
+  },
+  "checks": [
+    "bounded body ID through feet fallback and expiry",
+    "stabilized centring shared with front approach",
+    "forward-only loss hold",
+    "single-command repeated turns with confirmed stop and post-settle analyzed frame",
+    "continuous straight drive",
+    "late/failed drive and stop acknowledgements",
+    "two-second fixed recovery deadline",
+    "Stop during status and camera loss",
+    "strict zero-output telemetry",
+    "25/50 cm ultrasonic and measured approach",
+    "existing steering, hybrid and OpenJEV regressions",
+    "late status with fresh inference cannot extend fixed recovery deadline"
+  ],
+  "source_sha256": {
+    "person_follow.py": "49089a8d01e014b2ef6bf07fc30aeee08188b633343808b234a1b4bed0bf950c",
+    "robot_steering.py": "a8706beb4d505fac6d05c3c695bc7aabb94b518f1dfac4454054285348dd8f5d"
+  },
+  "physical_motion_tested": false,
+  "live_verified": true,
+  "live": {
+    "camera": "Connected",
+    "model": "YOLO26s + BoT-SORT / rule-based following",
+    "turn_phase": "idle",
+    "steering_enabled": false,
+    "suggestion": "left",
+    "reason": "Searching left for a person in front.",
+    "front_distance_cm": 105.4,
+    "controller_stop_cm": 25,
+    "controller_armed": false,
+    "pwm": [
+      0,
+      0
+    ]
+  }
+}

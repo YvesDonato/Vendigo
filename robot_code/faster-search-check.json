@@ -1,0 +1,44 @@
+{
+  "search_settle_ms": 5,
+  "following_settle_ms": 20,
+  "turn_pwm": 255,
+  "seconds_per_rotation": 3.184,
+  "search_powered_seconds": 6.368,
+  "checks": [
+    "search-only shorter settling",
+    "fresh analyzed post-stop frame remains required",
+    "search budget, reacquisition, Stop, timeout and camera guards",
+    "following burst regressions"
+  ],
+  "source_sha256": "99bc25a638e4d57e28a1bb18a6517bff1406b12c8b8ac3d84748aa1ae531ed7d",
+  "live_verified": true,
+  "physical_search_speed_tested": false,
+  "controller_stopped_verified": true,
+  "live_state": {
+    "camera_status": "Connected",
+    "model_ready": true,
+    "frames_received": 415,
+    "decisions_received": 160,
+    "steering": {
+      "enabled": false,
+      "connected": true,
+      "direction": "stop",
+      "search_rotation_seconds": 3.184,
+      "search_remaining_s": 6.368,
+      "search_direction": null,
+      "search_pulse_active": false,
+      "turn_phase": "idle",
+      "message": "Steering disabled",
+      "frame_id": null,
+      "distance_cm": null,
+      "distance_age_ms": 60,
+      "distance_blocked": true,
+      "stop_distance_cm": 25,
+      "follow_direction": null,
+      "follow_age_s": null,
+      "speed": 255,
+      "turn_speed": 255,
+      "url": "http://192.168.8.100"
+    }
+  }
+}

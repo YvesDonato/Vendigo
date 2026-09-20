@@ -1,0 +1,186 @@
+{
+  "camera_frame_sha256": "8e747ec01783f1a3b729b8cce9fafd7cb0b5ef8658936dc23d56c7d47659224e",
+  "diagnosis": "Raw monocular depth vetoed straight at approximately 0.39 m while front sensor was above 0.50 m. Target-only distance correction did not correct obstacle geometry.",
+  "old_camera_depth_scale": 1.0,
+  "old_target_only_scale": 1.75,
+  "new_camera_depth_scale": 1.75,
+  "new_target_only_scale": 1.0,
+  "total_person_scale_unchanged": true,
+  "stop_distance_cm": 50,
+  "geometry": {
+    "before": {
+      "safe": false,
+      "reason": "Visible estimated obstacle is inside the stopping envelope",
+      "clearance_m": 0.0
+    },
+    "after": {
+      "safe": true,
+      "reason": "No visible estimated obstacle intersects the stopping envelope",
+      "clearance_m": null
+    }
+  },
+  "gpu_replay_samples": 6,
+  "gpu_replay_all_front_approach_clear": true,
+  "raw_model_directions": [
+    "stop",
+    "stop",
+    "stop",
+    "stop",
+    "stop",
+    "stop"
+  ],
+  "host_controller_checks": [
+    {
+      "sensor_cm": 96.9,
+      "model_direction": "stop",
+      "steering_direction": "straight"
+    },
+    {
+      "sensor_cm": 51.0,
+      "model_direction": "stop",
+      "steering_direction": "straight"
+    },
+    {
+      "sensor_cm": 50.0,
+      "model_direction": "stop",
+      "steering_direction": "stop"
+    },
+    {
+      "sensor_cm": 49.0,
+      "model_direction": "stop",
+      "steering_direction": "stop"
+    },
+    {
+      "sensor_cm": 96.9,
+      "model_direction": "stop",
+      "steering_direction": "straight"
+    },
+    {
+      "sensor_cm": 51.0,
+      "model_direction": "stop",
+      "steering_direction": "straight"
+    },
+    {
+      "sensor_cm": 50.0,
+      "model_direction": "stop",
+      "steering_direction": "stop"
+    },
+    {
+      "sensor_cm": 49.0,
+      "model_direction": "stop",
+      "steering_direction": "stop"
+    },
+    {
+      "sensor_cm": 96.9,
+      "model_direction": "stop",
+      "steering_direction": "straight"
+    },
+    {
+      "sensor_cm": 51.0,
+      "model_direction": "stop",
+      "steering_direction": "straight"
+    },
+    {
+      "sensor_cm": 50.0,
+      "model_direction": "stop",
+      "steering_direction": "stop"
+    },
+    {
+      "sensor_cm": 49.0,
+      "model_direction": "stop",
+      "steering_direction": "stop"
+    },
+    {
+      "sensor_cm": 96.9,
+      "model_direction": "stop",
+      "steering_direction": "straight"
+    },
+    {
+      "sensor_cm": 51.0,
+      "model_direction": "stop",
+      "steering_direction": "straight"
+    },
+    {
+      "sensor_cm": 50.0,
+      "model_direction": "stop",
+      "steering_direction": "stop"
+    },
+    {
+      "sensor_cm": 49.0,
+      "model_direction": "stop",
+      "steering_direction": "stop"
+    },
+    {
+      "sensor_cm": 96.9,
+      "model_direction": "stop",
+      "steering_direction": "straight"
+    },
+    {
+      "sensor_cm": 51.0,
+      "model_direction": "stop",
+      "steering_direction": "straight"
+    },
+    {
+      "sensor_cm": 50.0,
+      "model_direction": "stop",
+      "steering_direction": "stop"
+    },
+    {
+      "sensor_cm": 49.0,
+      "model_direction": "stop",
+      "steering_direction": "stop"
+    },
+    {
+      "sensor_cm": 96.9,
+      "model_direction": "stop",
+      "steering_direction": "straight"
+    },
+    {
+      "sensor_cm": 51.0,
+      "model_direction": "stop",
+      "steering_direction": "straight"
+    },
+    {
+      "sensor_cm": 50.0,
+      "model_direction": "stop",
+      "steering_direction": "stop"
+    },
+    {
+      "sensor_cm": 49.0,
+      "model_direction": "stop",
+      "steering_direction": "stop"
+    }
+  ],
+  "physical_motion_tested": false,
+  "calibration_limit": "Existing single-point 1.5 m target calibration reused; not multi-scene obstacle or stopping-distance validation.",
+  "live_after_restart": {
+    "samples": 20,
+    "all_camera_connected": true,
+    "all_model_ready": true,
+    "all_robot_connected": true,
+    "steering_enabled": false,
+    "last_decision": {
+      "direction": "straight",
+      "reason": "Centred-person approach: front sensor 64.5 cm; stop at 50 cm.",
+      "source": "ultrasonic_approach",
+      "latency_s": 0.13262964691966772,
+      "motion_options": [
+        "stop",
+        "straight",
+        "left",
+        "right"
+      ],
+      "front_approach_clear": true,
+      "clear_motion_options": [
+        "stop",
+        "straight",
+        "left",
+        "right"
+      ],
+      "model_direction": "stop",
+      "frame_id": 1002,
+      "frame_age_ms": 240,
+      "stale": false
+    }
+  }
+}

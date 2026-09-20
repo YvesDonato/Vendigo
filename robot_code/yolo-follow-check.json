@@ -1,0 +1,36 @@
+{
+  "ssdlite_feet": {
+    "frames": 99,
+    "target_frames": 99,
+    "body_target_frames": 0,
+    "feet_target_frames": 99,
+    "target_ids": [],
+    "median_ms": 72.3,
+    "p95_ms": 78.2,
+    "directions": {
+      "straight": 99
+    },
+    "mean_ms": 72.7
+  },
+  "yolo_botsort_feet": {
+    "frames": 99,
+    "target_frames": 99,
+    "body_target_frames": 20,
+    "feet_target_frames": 79,
+    "target_ids": [
+      1
+    ],
+    "median_ms": 77.9,
+    "p95_ms": 80.1,
+    "directions": {
+      "straight": 87,
+      "left": 12
+    },
+    "mean_ms": 73.6
+  },
+  "validation": "99-frame user-approved stationary-robot clip; no physical movement test",
+  "clip_remote": "/ssd1/userdata/donatoy/openjev-follow-20260919/diagnostics/yolo/clip",
+  "feet_fallback": "Retained; run when the selected body is not currently tracked",
+  "weights_sha256": "646f8bc3fe0a656803d95c294f7852321748cb29d13466a1af8862e2db384a1b",
+  "source_sha256": "3dbb87fa0482e60f1d8058bf641d0cc779259b6d9571f00b78ab5a62df400005"
+}

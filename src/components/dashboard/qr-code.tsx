@@ -28,7 +28,7 @@ export function RobotQr({ robotId, onClose }: { robotId: string; onClose: () => 
     {image ? <img className="qr-image" src={image} alt={`QR code for ${url}`} width={240} height={240} /> : <div className="qr-loading">Preparing your QR code…</div>}
     <a className="qr-url" href={url} target="_blank" rel="noreferrer">Open storefront <ArrowUpRight size={13} /></a>
     {(url.includes("localhost") || url.includes("127.0.0.1")) && <p className="qr-lan-note">For phone scans, open this dashboard using your computer’s Wi-Fi IP address.</p>}
-    <div className="qr-actions"><button className="button button-secondary" onClick={copy} disabled={!url}>{copied ? <Check size={16} /> : <Copy size={16} />}{copied ? "Copied" : "Copy link"}</button><a className="button button-primary" href={image || undefined} download={`hawk-2-u-${robotId}-qr.png`}><Download size={16} /> Download QR</a></div>
+    <div className="qr-actions"><button className="button button-secondary" onClick={copy} disabled={!url}>{copied ? <Check size={16} /> : <Copy size={16} />}{copied ? "Copied" : "Copy link"}</button><a className="button button-primary" href={image || undefined} download={`vendigo-${robotId}-qr.png`}><Download size={16} /> Download QR</a></div>
     {error && <p className="inline-error" role="alert">{error}</p>}
   </Modal>;
 }

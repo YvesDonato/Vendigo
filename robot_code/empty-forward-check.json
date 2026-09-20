@@ -1,0 +1,59 @@
+{
+  "empty_view_action": "straight only with fresh camera forward clearance and valid front sonar beyond cutoff",
+  "front_stop_cm": 25,
+  "drive_pwm": 255,
+  "turn_pwm": 255,
+  "turn_burst_ms": 200,
+  "settle_ms": 20,
+  "checks": [
+    "empty scene with no previously seen person",
+    "continuous empty-scene forward beyond old 1 s hold",
+    "person reacquisition restores steering",
+    "camera obstruction, stale/missing camera and sonar stop",
+    "Stop prevents restart despite forward suggestion",
+    "post-turn fresh-frame barrier and controller timeout regressions",
+    "visible unmatched target hold compatibility",
+    "measured approach and 25/50 cm cutoffs"
+  ],
+  "source_sha256": {
+    "robot_steering.py": "7f4c79fda7c3daf456d4a2dc09b9eefba2760b57cc5070ff49cfa2bc6e808ed0",
+    "camera_live.py": "89685711e3ae778e398cc0e04e84716d2dc72c4c5ec34ea43e2a228c4bb96439"
+  },
+  "physical_motion_tested": false,
+  "live_verified": false,
+  "deployed": true,
+  "controller_stopped_verified": true,
+  "live_state": {
+    "model_ready": true,
+    "camera_status": "<urlopen error timed out>",
+    "frames_received": 0,
+    "decisions_received": 0,
+    "steering": {
+      "enabled": false,
+      "connected": true,
+      "direction": "stop",
+      "turn_phase": "idle",
+      "message": "Steering disabled",
+      "frame_id": null,
+      "distance_cm": 34.5,
+      "distance_age_ms": 97,
+      "distance_blocked": false,
+      "stop_distance_cm": 25,
+      "follow_direction": null,
+      "follow_age_s": null,
+      "speed": 255,
+      "turn_speed": 255,
+      "url": "http://192.168.8.100"
+    }
+  },
+  "robot_status": {
+    "armed": false,
+    "direction": "stop",
+    "speed": 0,
+    "driver_enabled": false,
+    "distance_cm": 34.5,
+    "distance_age_ms": 0,
+    "distance_blocked": false,
+    "stop_distance_cm": 25
+  }
+}

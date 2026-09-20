@@ -1,0 +1,41 @@
+--- a/person_follow.py
++++ b/person_follow.py
+@@ -150,11 +150,11 @@
+ 
+ def horizontal_direction(box, previous="straight"):
+     center = (box[0] + box[2]) / 2
+-    if center < .38 or center > .62:
+-        return "left" if center < .38 else "right"
+-    if previous == "left" and center < .42:
++    if center < .34 or center > .66:
++        return "left" if center < .34 else "right"
++    if previous == "left" and center < .38:
+         return "left"
+-    if previous == "right" and center > .58:
++    if previous == "right" and center > .62:
+         return "right"
+     return "straight"
+ 
+@@ -236,7 +236,7 @@
+                              clear_motion_options_version=1,
+                              detector="Ultralytics YOLO26s", detector_sha256=WEIGHTS_SHA256,
+                              tracker="BoT-SORT with camera-motion compensation", tracking_ids_version=1,
+-                             horizontal_enter=[.38, .62], horizontal_exit=[.42, .58], body_id_memory_s=LOST_WAIT_SECONDS,
++                             horizontal_enter=[.34, .66], horizontal_exit=[.38, .62], body_id_memory_s=LOST_WAIT_SECONDS,
+                              range_filter_samples=3, range_filter_window_s=RANGE_WINDOW_SECONDS,
+                              immediate_close_margin_m=CLOSE_MARGIN,
+                              feet_detector=FEET_MODEL, feet_revision=FEET_REVISION, feet_min_score=FEET_SCORE,
+--- a/robot_steering.py
++++ b/robot_steering.py
+@@ -11,9 +11,9 @@
+ REQUEST_TIMEOUT = 0.15
+ FRAME_RECOVERY_TIMEOUT = 2.0
+ FOLLOW_HOLD_SECONDS = 1.0
+-TURN_BURST_MS = 120
++TURN_BURST_MS = 200
+ TURN_MIN_BUDGET_MS = 80
+-TURN_SETTLE_SECONDS = .08  # Arrival-time buffer; no wheel encoders/camera capture clock.
++TURN_SETTLE_SECONDS = .02  # Arrival-time buffer; no wheel encoders/camera capture clock.
+ 
+ 
+ class WaitingForFrame(ValueError):

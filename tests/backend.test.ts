@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { setTimeout as delay } from "node:timers/promises";
 import { DemoStore, AppError } from "../src/lib/server/store.ts";
-import type { RobotHardware } from "../src/lib/robot/hardware.ts";
+import { robotHardware, type RobotHardware } from "../src/lib/robot/hardware.ts";
 
 const hardware: RobotHardware = {
   unlockCompartment: async () => {}, lockCompartment: async () => {},
@@ -58,6 +58,54 @@ test("pickup relocks on the server, records one sale, and broadcasts every metri
   assert.equal(snapshot.activeOrders.length, 0);
   assert.equal(snapshot.robots[0].status, "available");
   assert.ok(revisions.length >= 3);
+});
+
+test("a purchase opens the real lid adapter and its server timer closes it without browser requests", async (t) => {
+  const oldUrl = process.env.LID_API_URL;
+  const oldKey = process.env.LID_API_KEY;
+  process.env.LID_API_URL = "https://lid.example.invalid/api/v1/lid";
+  process.env.LID_API_KEY = "test-lid-api-key-".repeat(4);
+  t.after(() => {
+    if (oldUrl === undefined) delete process.env.LID_API_URL; else process.env.LID_API_URL = oldUrl;
+    if (oldKey === undefined) delete process.env.LID_API_KEY; else process.env.LID_API_KEY = oldKey;
+  });
+  const commands: string[] = [];
+  let rejectClose = false;
+  let wrongPosition = false;
+  t.mock.method(globalThis, "fetch", async (url: string, init: RequestInit) => {
+    assert.equal(url, process.env.LID_API_URL);
+    assert.equal(init.method, "POST");
+    assert.equal(new Headers(init.headers).get("Authorization"), `Bearer ${process.env.LID_API_KEY}`);
+    const { state } = JSON.parse(String(init.body));
+    commands.push(state);
+    if (state === "closed" && rejectClose) return new Response("offline", { status: 502 });
+    return Response.json({ commanded_state: wrongPosition ? "unknown" : state, commanded_angle: state === "open" ? 0 : 180, enabled: true, position_feedback: false });
+  });
+  const store = new DemoStore(robotHardware, 25);
+  t.after(() => store.dispose());
+  const order = await store.purchase(input);
+  assert.equal(order.status, "unlocked");
+  assert.deepEqual(commands, ["open"]);
+  // Retrying the purchase must not reopen the lid or extend its deadline.
+  assert.equal((await store.purchase(input)).closesAt, order.closesAt);
+  await delay(75);
+  assert.deepEqual(commands, ["open", "closed"]);
+  assert.equal(store.getOrder(order.id).status, "completed");
+  assert.equal(store.snapshot().inventory[0].stock, 7);
+  rejectClose = true;
+  const failed = await store.purchase({ ...input, orderId: "close-failure" });
+  await delay(75);
+  assert.equal(store.getOrder(failed.id).status, "lock_failed");
+  assert.equal(store.snapshot().inventory[0].stock, 7);
+  rejectClose = false;
+  await store.command("robot-001", "retry-lock");
+  assert.equal(store.getOrder(failed.id).status, "completed");
+  wrongPosition = true;
+  await assert.rejects(robotHardware.unlockCompartment("robot-001", 1), /did not acknowledge/);
+  process.env.LID_API_KEY = "too-short";
+  const count = commands.length;
+  await assert.rejects(robotHardware.unlockCompartment("robot-001", 1), /not configured/);
+  assert.equal(commands.length, count);
 });
 
 test("concurrent shoppers cannot oversell or open two compartments", async (t) => {

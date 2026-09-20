@@ -1,0 +1,18 @@
+{
+  "angle_commanded": 180,
+  "pulse_us": 2400,
+  "servo_hz": 50,
+  "motor_pwm_hz": [
+    0,
+    0
+  ],
+  "motors_stopped": true,
+  "invalid_requests_rejected": true,
+  "physical_angle_measured": false,
+  "firmware_sha256": "ce0a82d82e50260f28a60d4b1dbd072a9807df62b1140934418f45fdf8928773",
+  "controller_mac": "00:70:07:97:50:8C",
+  "viewer_restored": true,
+  "steering_enabled": false,
+  "servo_retained_after_viewer_restart": true,
+  "motor_pwm_active_during_check": false
+}

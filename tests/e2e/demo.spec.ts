@@ -60,7 +60,7 @@ test("mobile purchase relocks and immediately updates a separate dashboard sessi
 test("robot controls change the shared storefront state and manual unlock auto-relocks", async ({ page, request }) => {
   await page.goto("/dashboard");
   await page.getByRole("button", { name: "Stop", exact: true }).click();
-  await expect(page.getByText("Hawk stopped.")).toBeVisible();
+  await expect(page.getByText("Vendigo stopped.")).toBeVisible();
   const shop = await page.context().newPage();
   await shop.goto("/shop/robot-001");
   await expect(shop.getByText("Purchases are paused by the operator.")).toBeVisible();
@@ -68,7 +68,7 @@ test("robot controls change the shared storefront state and manual unlock auto-r
   await page.getByRole("button", { name: "Resume", exact: true }).click();
   await expect(shop.getByTestId("product-coke").getByRole("button")).toBeEnabled();
   await page.getByRole("button", { name: "Return to Base", exact: true }).click();
-  await expect(shop.getByText("Hawk is returning to base. Purchases are paused.")).toBeVisible();
+  await expect(shop.getByText("Vendigo is returning to base. Purchases are paused.")).toBeVisible();
   await page.getByRole("button", { name: "Resume", exact: true }).click();
   const before: AppSnapshot = await (await request.get("/api/state")).json();
   await page.getByRole("combobox", { name: "Compartment to unlock" }).selectOption("3");

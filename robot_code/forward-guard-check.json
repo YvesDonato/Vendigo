@@ -1,0 +1,50 @@
+{
+  "source_sha256": {
+    "robot_steering.py": "2307001885b004f8ac7964264d063113ab8403c616e7d32010e723e4248293c5",
+    "camera_live.py": "dd7b1e7b92a6181d31dd80cd74b1f5452d511eb9b5968267c07d1896533191ce"
+  },
+  "checks": [
+    "shoe box outside centre beam obeys forward sonar veto",
+    "close, missing, stale and disconnected sonar reject straight",
+    "valid clear sonar restores original forward decision",
+    "left and right remain available",
+    "search budget and post-stop observation regressions"
+  ],
+  "live_verified": true,
+  "physical_forward_verified": false,
+  "user_reenabled_during_verification": true,
+  "live_state": {
+    "camera_status": "Connected",
+    "model_ready": true,
+    "frames_received": 1406,
+    "decisions_received": 554,
+    "steering": {
+      "enabled": true,
+      "connected": true,
+      "direction": "stop",
+      "search_rotation_seconds": 3.184,
+      "search_remaining_s": 6.368,
+      "search_direction": null,
+      "search_pulse_active": false,
+      "turn_phase": "idle",
+      "message": "Automatic steering: waiting for a supported route",
+      "frame_id": 1401,
+      "distance_cm": null,
+      "distance_age_ms": 91,
+      "distance_blocked": true,
+      "stop_distance_cm": 25,
+      "follow_direction": null,
+      "follow_age_s": null,
+      "speed": 255,
+      "turn_speed": 255,
+      "url": "http://192.168.8.100"
+    },
+    "decision": {
+      "direction": "stop",
+      "reason": "Searching for the person: up to 2.00 estimated turns remaining.",
+      "source": "search_scan",
+      "model_direction": "stop",
+      "frame_age_ms": 109
+    }
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "calibration": {
+    "commanded_pulse_ms": [
+      196,
+      200,
+      200,
+      200
+    ],
+    "observed_degrees_approx": 90,
+    "seconds_per_rotation": 3.184,
+    "search_rotations": 2,
+    "search_powered_seconds": 6.368,
+    "turn_pwm": 255,
+    "angle_feedback": false
+  },
+  "source_sha256": {
+    "robot_steering.py": "f4241d318d59b50bfde84cdfa5ab9929454d6f1c99854a2da5597e2685510854",
+    "camera_live.py": "459d227d7951cd073d029983969b2c285c9e08679e0ff460269f2f0d1436ed82",
+    "person_follow.py": "d7d8f6066d21b579547cdcd06030e328a79a2516b723cc5627593d5b4ae4c04d",
+    "vlm_reasoner.py": "182551485e4081bb19b6f72ebd75f4625d8a89010c17482d0cabaa375e985f7a"
+  },
+  "live_verified": true,
+  "physical_search_tested": false,
+  "live_state": {
+    "camera_status": "Connected",
+    "model_status": "YOLO26s + BoT-SORT / rule-based following",
+    "model_ready": true,
+    "frames_received": 615,
+    "decisions_received": 185,
+    "steering": {
+      "enabled": false,
+      "connected": true,
+      "direction": "stop",
+      "search_rotation_seconds": 3.184,
+      "search_remaining_s": 6.368,
+      "search_direction": null,
+      "search_pulse_active": false,
+      "turn_phase": "idle",
+      "message": "Steering disabled",
+      "frame_id": null,
+      "distance_cm": 86.7,
+      "distance_age_ms": 132,
+      "distance_blocked": false,
+      "stop_distance_cm": 25,
+      "follow_direction": null,
+      "follow_age_s": null,
+      "speed": 255,
+      "turn_speed": 255,
+      "url": "http://192.168.8.100"
+    },
+    "decision": {
+      "direction": "left",
+      "reason": "Searching left for a person in front.",
+      "source": "vlm",
+      "clear_path_direction": "straight",
+      "clear_motion_options": [
+        "stop",
+        "straight",
+        "left",
+        "right"
+      ],
+      "frame_age_ms": 140,
+      "stale": false
+    }
+  },
+  "checks": [
+    "two-turn commanded-time cap",
+    "consistent search side",
+    "person reacquisition resets search",
+    "post-turn fresh image before travel",
+    "fresh sector ranking restricted to permitted motions",
+    "front sonar 25/50 cm regressions",
+    "Stop, timeout, camera loss and retry guards",
+    "strict clear-path IPC validation"
+  ],
+  "controller_stopped_verified": true
+}

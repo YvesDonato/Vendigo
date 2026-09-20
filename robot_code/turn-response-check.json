@@ -1,0 +1,52 @@
+{
+  "turn_burst_ms": 200,
+  "settle_ms": 20,
+  "turn_pwm": 255,
+  "follow_gap_m": 0.25,
+  "front_stop_cm": 25,
+  "horizontal_enter": [
+    0.34,
+    0.66
+  ],
+  "horizontal_exit": [
+    0.38,
+    0.62
+  ],
+  "recorded_tracking_policy_replay": {
+    "frames": 99,
+    "directions": {
+      "before": {
+        "left": 12,
+        "straight": 87
+      },
+      "after": {
+        "left": 10,
+        "straight": 89
+      }
+    },
+    "new_detector_inference": false
+  },
+  "source_sha256": {
+    "person_follow.py": "416823036c9f68c563a0f6bf5e536658fa1585a62aa2fdfb67722f08697f369a",
+    "robot_steering.py": "710ed5b1714799377ea02ba1034ea215edcff3b0ef8b5e30849b9343711e127d"
+  },
+  "physical_motion_tested": false,
+  "live_verified": true,
+  "checks": [
+    "single-command bursts up to 200 ms, post-stop analyzed-frame barrier",
+    "20 ms settling buffer with late-reply and Stop guards",
+    "earlier left/right release into forward band",
+    "tracking identity and camera/sonar regressions",
+    "99-frame recorded tracking replay",
+    "installed sources verified; startup disarmed"
+  ],
+  "live": {
+    "camera": "Connected",
+    "model": "YOLO26s + BoT-SORT / rule-based following",
+    "steering_enabled": false,
+    "suggestion": "left",
+    "reason": "Searching left for a person in front.",
+    "front_distance_cm": 57.4,
+    "front_stop_cm": 25
+  }
+}

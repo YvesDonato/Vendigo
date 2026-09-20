@@ -1,0 +1,118 @@
+{
+  "change": "Canonicalize permitted movements in model prompts to match training; no checkpoint changes",
+  "gpu": "H100",
+  "cases": [
+    {
+      "x": 0.313,
+      "range_m": 0.809,
+      "local": {
+        "direction": "left",
+        "reason": "Following selected feet: left (estimated 0.8 m; gap 0.5 m)."
+      },
+      "live_order": {
+        "direction": "stop",
+        "reason": "OpenJEV tuned head: stop; estimated gap 0.5 m."
+      },
+      "training_order": {
+        "direction": "left",
+        "reason": "OpenJEV tuned head: left; estimated gap 0.5 m."
+      }
+    },
+    {
+      "x": 0.312,
+      "range_m": 0.739,
+      "local": {
+        "direction": "left",
+        "reason": "Following selected feet: left (estimated 0.7 m; gap 0.5 m)."
+      },
+      "live_order": {
+        "direction": "stop",
+        "reason": "OpenJEV tuned head: stop; estimated gap 0.5 m."
+      },
+      "training_order": {
+        "direction": "left",
+        "reason": "OpenJEV tuned head: left; estimated gap 0.5 m."
+      }
+    },
+    {
+      "x": 0.586,
+      "range_m": 0.69,
+      "local": {
+        "direction": "straight",
+        "reason": "Following selected feet: straight (estimated 0.7 m; gap 0.5 m)."
+      },
+      "live_order": {
+        "direction": "stop",
+        "reason": "OpenJEV tuned head: stop; estimated gap 0.5 m."
+      },
+      "training_order": {
+        "direction": "straight",
+        "reason": "OpenJEV tuned head: straight; estimated gap 0.5 m."
+      }
+    },
+    {
+      "x": 0.5,
+      "range_m": 0.8,
+      "local": {
+        "direction": "straight",
+        "reason": "Following selected feet: straight (estimated 0.8 m; gap 0.5 m)."
+      },
+      "live_order": {
+        "direction": "stop",
+        "reason": "OpenJEV tuned head: stop; estimated gap 0.5 m."
+      },
+      "training_order": {
+        "direction": "straight",
+        "reason": "OpenJEV tuned head: straight; estimated gap 0.5 m."
+      }
+    },
+    {
+      "x": 0.7,
+      "range_m": 0.8,
+      "local": {
+        "direction": "right",
+        "reason": "Following selected feet: right (estimated 0.8 m; gap 0.5 m)."
+      },
+      "live_order": {
+        "direction": "stop",
+        "reason": "OpenJEV tuned head: stop; estimated gap 0.5 m."
+      },
+      "training_order": {
+        "direction": "stop",
+        "reason": "OpenJEV chose straight; current target or obstacle constraints require a stop."
+      }
+    },
+    {
+      "x": 0.5,
+      "range_m": 0.45,
+      "local": {
+        "direction": "stop",
+        "reason": "Feet close; holding position (estimated 0.5 m; gap 0.5 m)."
+      },
+      "live_order": {
+        "direction": "stop",
+        "reason": "OpenJEV guard: Feet close; holding position (estimated 0.5 m; gap 0.5 m)."
+      },
+      "training_order": {
+        "direction": "stop",
+        "reason": "OpenJEV guard: Feet close; holding position (estimated 0.5 m; gap 0.5 m)."
+      }
+    }
+  ],
+  "movement_cases": 5,
+  "resolved_false_stops": 4,
+  "remaining_guarded_wrong_direction_cases": 1,
+  "physical_motion_tested": false,
+  "live_after_restart": {
+    "samples": 24,
+    "all_camera_connected": true,
+    "all_robot_connected": true,
+    "steering_enabled": false,
+    "directions": {
+      "stop": 6,
+      "left": 18
+    },
+    "last_reason": "OpenJEV guard: Person lost; waiting still for 2 seconds before searching left.",
+    "last_sensor_cm": 105.1
+  }
+}

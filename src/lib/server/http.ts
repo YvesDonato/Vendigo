@@ -23,6 +23,6 @@ export function compartmentField(body: Record<string, unknown>) {
 
 export function errorResponse(error: unknown) {
   if (error instanceof AppError) return Response.json({ error: error.message }, { status: error.status });
-  console.error("Hawk-2-U request failed:", error);
-  return Response.json({ error: "Hawk couldn’t complete that request. Please try again." }, { status: 500 });
+  console.error("Vendigo request failed:", error);
+  return Response.json({ error: "Vendigo couldn’t complete that request. Please try again." }, { status: 500 });
 }

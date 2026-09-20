@@ -13,8 +13,8 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: [
-    { command: "npm run start -- --hostname 127.0.0.1 --port 3100", url: "http://127.0.0.1:3100/api/state", reuseExistingServer: !process.env.CI, timeout: 60_000, env: { CAMERA_STREAM_URL: "" } },
+    { command: "npm run start -- --hostname 127.0.0.1 --port 3100", url: "http://127.0.0.1:3100/api/state", reuseExistingServer: !process.env.CI, timeout: 60_000, env: { CAMERA_STREAM_URL: "", LID_API_URL: "", LID_API_ONLY: "" } },
     { command: "node tests/camera-fixture.mjs", url: "http://127.0.0.1:3102/health", timeout: 20_000 },
-    { command: "npm run start -- --hostname 127.0.0.1 --port 3101", url: "http://127.0.0.1:3101/api/state", reuseExistingServer: !process.env.CI, timeout: 60_000, env: { CAMERA_STREAM_URL: "http://127.0.0.1:3102/stream" } },
+    { command: "npm run start -- --hostname 127.0.0.1 --port 3101", url: "http://127.0.0.1:3101/api/state", reuseExistingServer: !process.env.CI, timeout: 60_000, env: { CAMERA_STREAM_URL: "http://127.0.0.1:3102/stream", LID_API_URL: "", LID_API_ONLY: "" } },
   ],
 });

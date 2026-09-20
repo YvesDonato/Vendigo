@@ -1,8 +1,8 @@
-# Hawk-2-U
+# Vendigo
 
 **Commerce that comes to you.**
 
-Hawk-2-U is an autonomous mobile storefront for crowded events. A small robot brings cold drinks and snacks to the crowd. Customers scan its QR code, pick one free item, confirm, and collect it from an unlocked compartment. Operators see inventory, pickup activity, robot controls, and an onboard camera in one live dashboard. The mobile-first interface uses white and sky blue without shadows, decorative badges, location labels, or fleet numbers.
+Vendigo is an autonomous mobile storefront for crowded events. A small robot brings cold drinks and snacks to the crowd. Customers scan its QR code, pick one free item, confirm, and collect it from an unlocked compartment. Operators see inventory, pickup activity, robot controls, and an onboard camera in one live dashboard. The mobile-first interface uses white and sky blue without shadows, decorative badges, location labels, or fleet numbers.
 
 ## Run locally
 
@@ -38,8 +38,8 @@ Alternatively, set `NEXT_PUBLIC_SHOP_ORIGIN=http://192.168.1.42:3000` before sta
 2. Scan the QR with a phone, or open `/shop/robot-001` in another browser.
 3. Choose **Coca-Cola → Get Item → Confirm**.
 4. All items are **Free**. Confirmation goes straight to unlocking, with no payment step.
-5. The server acknowledges the unlock; the customer sees **Compartment unlocked**, **Take your Coca-Cola**, and a ten-second countdown.
-6. After ten seconds, the **server** relocks the compartment, deducts one unit, and records the sale.
+5. The server acknowledges the unlock; the customer sees **Compartment unlocked**, **Take your Coca-Cola**, and a seven-second countdown.
+6. After seven seconds, the **server** relocks the compartment, deducts one unit, and records the sale.
 7. Units sold, conversion, inventory, and recent sales update in all open dashboards without refreshing. Free pickups record zero-value transactions, so revenue stays at $0.00.
 
 Closing or refreshing the customer’s tab does not cancel the relock timer. Refreshing during a pickup restores the active order. A repeated request reuses the order ID and cannot record a second sale. Only one compartment per robot can be active at a time.
@@ -81,7 +81,7 @@ src/
                             VenueLocation, RobotCommand, and shared state
 public/
   products/                 Replaceable local SVG product illustrations
-  robot.svg                 Hawk illustration
+  robot.svg                 Vendigo illustration
 camera_code/                Original ESP32 firmware, preserved unchanged
 tests/                      Backend and browser verification
 ```
@@ -94,7 +94,21 @@ Robot movement and battery telemetry are simulated; camera status reflects the c
 
 ## Robot hardware integration
 
-Replace `simulatedHardware` in [src/lib/robot/hardware.ts](src/lib/robot/hardware.ts) with your vehicle HTTP or WebSocket calls:
+Set `LID_API_URL=https://vendi.yvesdonato.com/api/v1/lid` on the website server
+to enable the physical lid. Set `LID_API_KEY` to the dedicated lid API key on a
+hosted website; this laptop can read the existing `robot_code/lid-api.token`
+instead. These are server-only settings. Leave `LID_API_URL` empty for simulation.
+
+A confirmed purchase sends `{"state":"open"}`. After acknowledgement, the
+existing seven-second server timer sends `{"state":"closed"}` even if the browser
+is closed or refreshed. All catalog compartments share this robot's one lid.
+Failed close requests use the existing operator **Retry lock** flow and do not
+complete the sale. Position acknowledgements are commands, not physical sensor
+feedback. The website server, tunnel, and lid API must remain running; the timer
+does not survive a website-server restart.
+
+The shared adapter in [src/lib/robot/hardware.ts](src/lib/robot/hardware.ts)
+handles these operations (wheel commands remain simulated):
 
 ```ts
 unlockCompartment(robotId, compartmentId)
@@ -164,11 +178,9 @@ npm run test:e2e
 
 Browser tests start production instances on ports **3100/3101**, plus an isolated MJPEG fixture on **3102**, and shut them down afterward. They verify phone/desktop layouts, a purchase across separate browser sessions, page-reload recovery, tab-disconnect relocking, all related metrics, robot controls, manual unlocks, QR generation, invalid API requests, unknown robots, and camera reconnects. Screenshots are written to the ignored `test-results/` directory.
 
-## GitHub project name
+## Project name
 
-The package, metadata, page titles, docs, and branding use **Hawk-2-U** (`hawk-2-u` for the npm package name). The GitHub repository has been renamed to [ericpungholee/Hawk-2-U](https://github.com/ericpungholee/Hawk-2-U), and this checkout’s `origin` now points to `git@github.com:ericpungholee/Hawk-2-U.git`.
-
-The active checkout directory keeps its existing filesystem path so the open workspace remains usable. It can be renamed to `Hawk-2-U` after stopping the running app and leaving the directory.
+The website, metadata, package, and documentation use **Vendigo** (`vendigo` for the npm package name). The existing [GitHub repository](https://github.com/ericpungholee/Hawk-2-U) and local checkout path are unchanged.
 
 ## Robot voice and customer interaction
 

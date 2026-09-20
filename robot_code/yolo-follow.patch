@@ -1,0 +1,206 @@
+--- a/person_follow.py
++++ b/person_follow.py
+@@ -16,8 +16,8 @@
+ FEET_SCORE = .25
+ FEET_QUERIES = [["a human foot", "a shoe on a person's foot", "a sock on a person's foot"]]
+ 
+-WEIGHTS_NAME = "ssdlite320_mobilenet_v3_large_coco-a79551df.pth"
+-WEIGHTS_SHA256 = "a79551df90c79834bcd3bb3845ef9d966b5449a3a9b2833ae8404778ca5d65d2"
++WEIGHTS_NAME = "yolo26s.pt"
++WEIGHTS_SHA256 = "646f8bc3fe0a656803d95c294f7852321748cb29d13466a1af8862e2db384a1b"
+ 
+ 
+ def validate_tracking(value):
+@@ -30,13 +30,20 @@
+     if target is not None and (type(target) is not int or not 0 <= target < len(people)):
+         raise ValueError("Tracking target must index a detection or be absent")
+     previous = 0
++    ids = set()
+     for person in people:
+-        if not isinstance(person, dict) or set(person) not in ({"box", "score", "range_m"}, {"box", "score", "range_m", "kind"}):
++        if (not isinstance(person, dict) or not {"box", "score", "range_m"} <= set(person)
++                or not set(person) <= {"box", "score", "range_m", "kind", "track_id"}):
+             raise ValueError("Invalid detected person")
+         kind = person.get("kind", "person")
+         if kind not in ("person", "feet"):
+             raise ValueError("Unknown tracking target kind")
+-        minimum_score = FEET_SCORE if kind == "feet" else .6
++        if "track_id" in person:
++            ident = person["track_id"]
++            if kind != "person" or type(ident) is not int or not 1 <= ident <= 0x7fffffff or ident in ids:
++                raise ValueError("Expected unique positive person track IDs")
++            ids.add(ident)
++        minimum_score = FEET_SCORE if kind == "feet" or "track_id" in person else .6
+         box = person["box"]
+         if not isinstance(box, list) or len(box) != 4:
+             raise ValueError("Expected a normalized person box")
+@@ -77,10 +84,10 @@
+     clear = scene_motion_options(observation, now) if clear is None else clear
+     return clear if tracking["target"] is not None else [d for d in clear if d in ("stop", decision["direction"])]
+ 
+-def select_people(boxes, scores, labels, depth, kind="person"):
++def select_people(boxes, scores, labels, depth, kind="person", track_ids=None):
+     if kind not in ("person", "feet"):
+         raise ValueError("Unknown tracking target kind")
+-    minimum_score = FEET_SCORE if kind == "feet" else .6
++    minimum_score = FEET_SCORE if kind == "feet" or track_ids is not None else .6
+     depth = np.asarray(depth)
+     if depth.ndim != 2 or min(depth.shape, default=0) < 2 or not np.isfinite(depth).all() or np.any(depth <= 0):
+         raise ValueError("Person following requires valid current depth estimates")
+@@ -89,9 +96,16 @@
+         raise ValueError("Invalid detector output shapes")
+     if not all(np.isfinite(x).all() for x in (boxes, scores, labels)):
+         raise ValueError("Invalid detector output values")
++    if track_ids is not None:
++        track_ids = np.asarray(track_ids)
++        if (kind != "person" or track_ids.shape != scores.shape or track_ids.dtype.kind not in "iuf"
++                or not np.isfinite(track_ids).all()
++                or np.any(track_ids != np.floor(track_ids)) or np.any(track_ids < 1)
++                or np.any(track_ids > 0x7fffffff) or len(np.unique(track_ids)) != len(track_ids)):
++            raise ValueError("Invalid person track IDs")
+     h, w = depth.shape
+     people = []
+-    for box, score, label in zip(boxes, scores, labels):
++    for index, (box, score, label) in enumerate(zip(boxes, scores, labels)):
+         if label != 1 or score < minimum_score:
+             continue
+         x1, y1, x2, y2 = np.clip(box, [0, 0, 0, 0], [w, h, w, h])
+@@ -106,6 +120,8 @@
+                            score=float(score), range_m=distance))
+         if kind == "feet":
+             people[-1]["kind"] = "feet"
++        if track_ids is not None:
++            people[-1]["track_id"] = int(track_ids[index])
+     people.sort(key=lambda p: p["range_m"])
+     return validate_tracking(dict(people=people[:10], target=0 if people else None))
+ 
+@@ -160,7 +176,7 @@
+         return dict(direction=search_direction, reason=f"Searching {search_direction} for a person in front.")
+     person = tracking["people"][tracking["target"]]
+     distance = person["range_m"]
+-    target = "Feet" if person.get("kind") == "feet" else "Person"
++    target = "Feet" if person.get("kind") == "feet" else f"Person #{person['track_id']}" if "track_id" in person else "Person"
+     # Box area is not distance: seated people and cropped bodies can fill the
+     # image while still beyond the gap. The same-frame obstacle guard also applies.
+     if distance <= gap:
+@@ -172,7 +188,7 @@
+ class PersonFollower:
+     def __init__(self, model_path, calibration, gap=1.0, distance_scale=1.0, openjev_model=None, openjev_head=None, openjev_turns_only=False):
+         import torch
+-        from torchvision.models.detection import ssdlite320_mobilenet_v3_large
++        from ultralytics import YOLO
+         from rgb_obstacles import RGBObstacleGuard
+         from transformers import Owlv2Processor, Owlv2ForObjectDetection
+         follow_decision(dict(people=[], target=None), gap)
+@@ -182,9 +198,8 @@
+         checkpoint = models / WEIGHTS_NAME
+         if hashlib.sha256(checkpoint.read_bytes()).hexdigest() != WEIGHTS_SHA256:
+             raise ValueError("Person detector checkpoint does not match the official weights")
+-        self.detector = ssdlite320_mobilenet_v3_large(weights=None, weights_backbone=None)
+-        self.detector.load_state_dict(torch.load(checkpoint, map_location="cpu", weights_only=True))
+-        self.detector.to("cuda:0").eval().requires_grad_(False)
++        self.detector = YOLO(str(checkpoint))
++        self.detector_seen_at = None
+         self.feet_processor = Owlv2Processor.from_pretrained(
+             FEET_MODEL, revision=FEET_REVISION, local_files_only=True, use_fast=True)
+         self.feet_detector = Owlv2ForObjectDetection.from_pretrained(
+@@ -207,13 +222,17 @@
+             self.steering_model = OpenJevFollower(openjev_model, openjev_head, turns_only=openjev_turns_only)
+         blank = np.zeros((240, 320, 3), dtype=np.uint8)
+         with torch.inference_mode():
+-            self.detector([torch.zeros((3, 240, 320), device="cuda:0")])
++            self.detect_people(blank, np.ones((240, 320), dtype=np.float32), time.monotonic())
++            for tracker in self.detector.predictor.trackers:
++                tracker.reset()
++            self.detector_seen_at = None
+             self.guard.estimate_depth(blank)
+             self.detect_feet(blank, np.ones((240, 320), dtype=np.float32))
+-        self.metadata = dict(name="Follow one person", backend="person_follow", input_kind="rgb", motion_options_version=1,
++        self.metadata = dict(name="YOLO26s + BoT-SORT / rule-based following", backend="person_follow", input_kind="rgb", motion_options_version=1,
+                              front_approach_version=1,
+                              clear_motion_options_version=1,
+-                             detector="TorchVision SSDLite320 MobileNetV3 COCO_V1", detector_sha256=WEIGHTS_SHA256,
++                             detector="Ultralytics YOLO26s", detector_sha256=WEIGHTS_SHA256,
++                             tracker="BoT-SORT with camera-motion compensation", tracking_ids_version=1,
+                              range_filter_samples=3, range_filter_window_s=RANGE_WINDOW_SECONDS,
+                              immediate_close_margin_m=CLOSE_MARGIN,
+                              feet_detector=FEET_MODEL, feet_revision=FEET_REVISION, feet_min_score=FEET_SCORE,
+@@ -222,6 +241,24 @@
+                              memory=f"wait still for {LOST_WAIT_SECONDS:g} seconds after detection loss, then search toward the last clear side; no identity recognition")
+         if self.steering_model:
+             self.metadata.update(self.steering_model.metadata)
++
++    def detect_people(self, pixels, depth, captured):
++        # Reset IDs after a long capture gap; never match across a disconnected stream.
++        if self.detector_seen_at is not None and not 0 <= captured - self.detector_seen_at <= LOST_WAIT_SECONDS:
++            for tracker in self.detector.predictor.trackers:
++                tracker.reset()
++            self.locked_target = None
++        self.detector_seen_at = captured
++        # Ultralytics numpy inputs use BGR; the camera/depth/feet pipeline uses RGB.
++        result = self.detector.track(pixels[:, :, ::-1].copy(), persist=True,
++                                     tracker=str(Path(__file__).with_name("person_botsort.yaml")),
++                                     classes=[0], conf=FEET_SCORE, imgsz=640, max_det=10,
++                                     device=0, quantize="fp16", verbose=False)[0]
++        boxes = result.boxes
++        if boxes is None or not boxes.is_track:
++            return dict(people=[], target=None)
++        return select_people(boxes.xyxy.cpu().numpy(), boxes.conf.cpu().numpy(),
++                             np.ones(len(boxes)), depth, track_ids=boxes.id.cpu().numpy())
+ 
+     def detect_feet(self, pixels, depth):
+         from torchvision.ops import nms
+@@ -246,10 +283,19 @@
+             target = min(range(len(people)), key=lambda i: (abs(sum(people[i]["box"][::2]) / 2 - .5), people[i]["range_m"]))
+         elif people:
+             previous = self.locked_target
++            previous_id = previous.get("track_id")
++            same_id = next((i for i, p in enumerate(people)
++                            if previous_id is not None and p.get("track_id") == previous_id), None)
++            if same_id is not None:
++                self.locked_target = people[same_id]
++                return validate_tracking(dict(people=people, target=same_id))
+             a = previous["box"]
+             area_a = (a[2] - a[0]) * (a[3] - a[1])
+             scores = []
+             for person in people:
++                if previous_id is not None and "track_id" in person:
++                    scores.append(0.)  # Another tracked person must not steal a missing target.
++                    continue
+                 b = person["box"]
+                 area_b = (b[2] - b[0]) * (b[3] - b[1])
+                 overlap = max(0, min(a[2], b[2]) - max(a[0], b[0])) * max(0, min(a[3], b[3]) - max(a[1], b[1]))
+@@ -262,8 +308,8 @@
+             if scores[match] > 0:
+                 target = match
+         if target is not None:
+-            # ponytail: position/depth association, not identity recognition;
+-            # crossing or occluding people may still need an appearance tracker.
++            # ponytail: body/feet transitions still use position and depth;
++            # crossing feet need a dedicated association model if this proves ambiguous.
+             self.locked_target = people[target]
+         return validate_tracking(dict(people=people, target=target))
+ 
+@@ -311,16 +357,16 @@
+         from rgb_obstacles import _observation_from_depth
+         started = time.monotonic()
+         pixels = np.asarray(rgb).copy()
+-        tensor = self.torch.from_numpy(pixels).permute(2, 0, 1).to("cuda:0", dtype=self.torch.float32) / 255
+         with self.torch.inference_mode():
+-            detection = self.detector([tensor])[0]
+             depth = self.guard.estimate_depth(pixels)
+-            feet = self.detect_feet(pixels, depth * self.guard.calibration.depth_scale)
+-        self.tracking = select_people(*(detection[key].detach().cpu().numpy() for key in ("boxes", "scores", "labels")),
+-                                      depth * self.guard.calibration.depth_scale)
++            people = self.detect_people(pixels, depth * self.guard.calibration.depth_scale, started)
++            selected_id = (self.locked_target or {}).get("track_id")
++            body_found = selected_id is not None and any(p.get("track_id") == selected_id for p in people["people"])
++            feet = (dict(people=[], target=None) if body_found else
++                    self.detect_feet(pixels, depth * self.guard.calibration.depth_scale))
+         # A measured target-distance correction must not also move obstacle
+         # surfaces farther away: obstacle geometry has separate calibration.
+-        self.tracking = scale_tracking(merge_feet(self.tracking, feet), self.distance_scale)
++        self.tracking = scale_tracking(merge_feet(people, feet), self.distance_scale)
+         self.tracking = self.select_target(self.tracking, started)
+         decision = self.choose_direction(self.tracking, started)
+         observation = _observation_from_depth(depth, started, self.guard.calibration)

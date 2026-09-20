@@ -1,0 +1,175 @@
+{
+  "metadata": {
+    "name": "Follow closest person",
+    "backend": "person_follow",
+    "input_kind": "rgb",
+    "detector": "TorchVision SSDLite320 MobileNetV3 COCO_V1",
+    "detector_sha256": "a79551df90c79834bcd3bb3845ef9d966b5449a3a9b2833ae8404778ca5d65d2",
+    "feet_detector": "google/owlv2-base-patch16-ensemble",
+    "feet_revision": "cfd3195ba4ea9592eec887ded089f4c08eff231d",
+    "feet_min_score": 0.25,
+    "follow_gap_m": 1.0,
+    "detection_gap_hold_s": 0.75,
+    "selection": "nearest estimated range in current image",
+    "camera_calibration": {
+      "camera_fov": 90.0,
+      "camera_height": 0.09,
+      "camera_pitch_deg": 0.0,
+      "camera_forward": 0.0875,
+      "depth_scale": 1.0,
+      "min_range_fraction": 1.0,
+      "rear": -0.0875,
+      "front": 0.0875,
+      "half_width": 0.06,
+      "vehicle_height": 0.5,
+      "floor_tolerance": 0.015,
+      "braking_deceleration": 0.5,
+      "safety_margin": 0.15,
+      "lateral_margin": 0.04,
+      "retrace_margin": 0.08,
+      "control_interval": 0.25,
+      "max_age": 0.5
+    },
+    "physical_clearance_validated": false,
+    "memory": "last following direction for 0.75 seconds, then last seen side for searching; no identity recognition"
+  },
+  "results": [
+    {
+      "fixture": "legs",
+      "tracking": {
+        "people": [
+          {
+            "box": [
+              0.177148175239563,
+              0.0031542301177978514,
+              0.7145999908447266,
+              0.7536111195882161
+            ],
+            "score": 0.888778805732727,
+            "range_m": 1.6309474110603333
+          }
+        ],
+        "target": 0
+      },
+      "decision": {
+        "direction": "straight",
+        "reason": "Following nearest person: straight (estimated 1.6 m; gap 1.0 m)."
+      },
+      "total_ms": [
+        158.4,
+        159.9,
+        160.6
+      ]
+    },
+    {
+      "fixture": "feet_only_crop",
+      "tracking": {
+        "people": [
+          {
+            "box": [
+              0.265625,
+              0.13635416666666667,
+              0.344140625,
+              0.5258333333333334
+            ],
+            "score": 0.41483956575393677,
+            "range_m": 0.3391430824995041,
+            "kind": "feet"
+          },
+          {
+            "box": [
+              0.49921875,
+              0.195,
+              0.556640625,
+              0.5045833333333334
+            ],
+            "score": 0.38664764165878296,
+            "range_m": 0.3611215651035309,
+            "kind": "feet"
+          }
+        ],
+        "target": 0
+      },
+      "decision": {
+        "direction": "stop",
+        "reason": "Feet close; holding position (estimated 0.3 m; gap 1.0 m)."
+      },
+      "total_ms": [
+        318.0,
+        315.8,
+        283.8
+      ]
+    },
+    {
+      "fixture": "floor_only_crop",
+      "tracking": {
+        "people": [],
+        "target": null
+      },
+      "decision": {
+        "direction": "left",
+        "reason": "Searching left for a person in front."
+      },
+      "total_ms": [
+        466.6,
+        435.8,
+        445.9
+      ]
+    },
+    {
+      "fixture": "bag",
+      "tracking": {
+        "people": [],
+        "target": null
+      },
+      "decision": {
+        "direction": "left",
+        "reason": "Searching left for a person in front."
+      },
+      "total_ms": [
+        162.3,
+        163.1,
+        165.1
+      ]
+    },
+    {
+      "fixture": "current",
+      "tracking": {
+        "people": [
+          {
+            "box": [
+              0.440234375,
+              0.6239583333333333,
+              0.553125,
+              0.7302083333333333
+            ],
+            "score": 0.33589524030685425,
+            "range_m": 0.6425338089466095,
+            "kind": "feet"
+          },
+          {
+            "box": [
+              0.444140625,
+              0.5427083333333333,
+              0.526953125,
+              0.6458333333333334
+            ],
+            "score": 0.250545859336853,
+            "range_m": 0.6432234346866608,
+            "kind": "feet"
+          }
+        ],
+        "target": 0
+      },
+      "decision": {
+        "direction": "stop",
+        "reason": "Feet close; holding position (estimated 0.6 m; gap 1.0 m)."
+      },
+      "total_ms": [
+        164.1,
+        165.0,
+        162.2
+      ]
+    }
+  ]
+}

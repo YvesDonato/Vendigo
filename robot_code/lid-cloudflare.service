@@ -1,0 +1,14 @@
+[Unit]
+Description=Cloudflare tunnel for the Hawk-2-U lid API
+Requires=lid-api.service
+After=network-online.target lid-api.service
+ConditionFileNotEmpty=/home/yvesd/Codebases/auto-dash/robot_code/cloudflare-tunnel.token
+
+[Service]
+ExecStart=/home/yvesd/Codebases/auto-dash/robot_code/.cloudflared-bin/bin/cloudflared tunnel --no-autoupdate run --token-file /home/yvesd/Codebases/auto-dash/robot_code/cloudflare-tunnel.token
+Restart=on-failure
+RestartSec=5
+UMask=0077
+
+[Install]
+WantedBy=default.target

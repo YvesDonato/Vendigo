@@ -1,0 +1,87 @@
+{
+  "checked_at": "2026-09-19T20:25:39.666526+00:00",
+  "firmware": "lordbot-jev-2",
+  "flash_hash_verified": true,
+  "controller_mac": "00:70:07:97:50:8C",
+  "pins": {
+    "trig": 13,
+    "echo": 14
+  },
+  "stop_distance_cm": 50,
+  "checks_passed": [
+    "firmware_compile",
+    "range_guard_cpp",
+    "ultrasonic_host",
+    "robot_steering_regression",
+    "camera_live_regression",
+    "live_nonmoving_auth_stop_watchdog",
+    "live_stop_distance_auth_and_bounds",
+    "live_viewer_distance_ui_and_trained_head"
+  ],
+  "object_test": {
+    "user_reported_cm": [
+      30,
+      50
+    ],
+    "samples": 20,
+    "valid_samples": 0,
+    "forward_blocked_all": true,
+    "motors_disabled_all": true
+  },
+  "physical_ranging_validated": false,
+  "physical_stopping_validated": false,
+  "notes": [
+    "Reseating the cable restored echoes, with intermittent missing readings. User deferred the stationary measured-distance check.",
+    "Trained OpenJEV head remains active with estimated 0.5 m following gap and 2 s target-loss wait.",
+    "Single front range reading does not identify the tracked person or cover turns."
+  ],
+  "after_reseating": {
+    "samples": 15,
+    "valid_samples": 2,
+    "readings_cm": [
+      null,
+      null,
+      51.9,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      48.8
+    ]
+  },
+  "latest_sample": {
+    "samples": 20,
+    "valid_samples": 17,
+    "readings_cm": [
+      11.2,
+      11.3,
+      11.3,
+      11.6,
+      12.3,
+      13.2,
+      13.1,
+      12.1,
+      7.4,
+      7.6,
+      8.6,
+      51.9,
+      null,
+      null,
+      52.4,
+      70.5,
+      70.2,
+      68.8,
+      null,
+      68.8
+    ],
+    "motors_disabled_all": true
+  },
+  "camera_recovered": true
+}

@@ -1,0 +1,15 @@
+[Unit]
+Description=Hawk-2-U authenticated lid API
+After=network-online.target
+
+[Service]
+WorkingDirectory=/home/yvesd/Codebases/auto-dash
+ExecStart=/home/yvesd/.nix-profile/bin/node node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 8781
+Environment=NODE_ENV=production
+Environment=LID_API_ONLY=1
+Restart=on-failure
+RestartSec=3
+UMask=0077
+
+[Install]
+WantedBy=default.target

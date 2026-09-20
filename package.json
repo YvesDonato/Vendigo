@@ -1,6 +1,6 @@
 {
-  "name": "hawk-2-u",
-  "description": "Hawk-2-U \u2014 Commerce that comes to you. An autonomous mobile storefront and live operations dashboard.",
+  "name": "vendigo",
+  "description": "Vendigo \u2014 Commerce that comes to you. An autonomous mobile storefront and live operations dashboard.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ericpungholee/Hawk-2-U.git"
@@ -14,7 +14,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/backend.test.ts",
+    "test": "node --experimental-strip-types --test tests/backend.test.ts tests/lid-api.test.ts",
     "test:e2e": "playwright test",
     "voice": "node voice-server/server.mts"
   },

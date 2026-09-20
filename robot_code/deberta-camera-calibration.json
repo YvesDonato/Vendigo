@@ -1,0 +1,11 @@
+{
+  "camera_height": 0.09,
+  "half_width": 0.06,
+  "front": 0.0875,
+  "rear": -0.0875,
+  "camera_forward": 0.0875,
+  "camera_pitch_deg": 0.0,
+  "camera_fov": 90.0,
+  "depth_scale": 1.75,
+  "floor_tolerance": 0.015
+}

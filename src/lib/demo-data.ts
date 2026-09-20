@@ -31,7 +31,7 @@ export function createSeed(): AppSnapshot {
   return {
     revision: 0,
     startedAt: new Date(now).toISOString(),
-    robots: [{ id: "robot-001", name: "Hawk #1", status: "available", locationId: "hacking", battery: 74 }],
+    robots: [{ id: "robot-001", name: "Vendigo #1", status: "available", locationId: "hacking", battery: 74 }],
     products,
     inventory: products.map((product, i) => ({ robotId: "robot-001", productId: product.id, compartmentId: i + 1, stock: [8, 4, 7, 9, 6][i], capacity: 12 })),
     locations,

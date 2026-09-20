@@ -1,0 +1,130 @@
+--- a/camera_live.py
++++ b/camera_live.py
+@@ -108,6 +108,8 @@
+         script += f" --camera-calibration {shlex.quote(str(calibration))}"
+     if getattr(args, "follow_person", False):
+         script += f" --follow-person --follow-gap {args.follow_gap} --follow-distance-scale {getattr(args, 'follow_distance_scale', 1.0)}"
++    if getattr(args, "openjev_turns_only", False):
++        script += " --openjev-turns-only"
+     for option in ("openjev_follow_model", "openjev_follow_head"):
+         value = getattr(args, option, None)
+         if value:
+@@ -218,6 +220,8 @@
+                     raise ValueError("Backboard Jev needs current camera movement constraints")
+                 if getattr(self.args, "openjev_follow_model", None) and reasoner.metadata.get("decision_model") != "openjev_follow":
+                     raise ValueError("Remote worker did not confirm OpenJEV following")
++                if getattr(self.args, "openjev_turns_only", False) and reasoner.metadata.get("turns_only") is not True:
++                    raise ValueError("Remote worker did not confirm rule-based forward / OpenJEV turns")
+                 if getattr(self.args, "openjev_follow_head", None) and not reasoner.metadata.get("head_sha256"):
+                     raise ValueError("Remote worker did not confirm the trained following head")
+                 if (getattr(self.args, "follow_person", False) and getattr(self.args, "stop_distance_cm", None) is not None
+@@ -441,6 +445,7 @@
+     parser.add_argument("--follow-person", action="store_true")
+     parser.add_argument("--openjev-follow-model", type=PurePosixPath, help="Remote OpenJEV checkpoint for person-following decisions")
+     parser.add_argument("--openjev-follow-head", type=PurePosixPath, help="Optional remote fine-tuned following head")
++    parser.add_argument("--openjev-turns-only", action="store_true", help="Use rules for forward movement and OpenJEV only for turns")
+     parser.add_argument("--backboard-key-file", type=Path,
+                         help="Use hosted TypeSafe Jev for person-following decisions; private local API key file")
+     parser.add_argument("--follow-gap", type=float, default=1.0, help="Estimated following gap in metres, 0.5-3")
+@@ -467,6 +472,8 @@
+         parser.error("OpenJEV following requires a 0.5 metre gap and cannot be combined with Backboard")
+     if args.openjev_follow_head and not args.openjev_follow_model:
+         parser.error("A following head requires --openjev-follow-model")
++    if args.openjev_turns_only and not args.openjev_follow_model:
++        parser.error("Hybrid steering requires --openjev-follow-model")
+     if any(path is not None and not path.is_absolute() for path in (args.openjev_follow_model, args.openjev_follow_head)):
+         parser.error("OpenJEV following paths must be absolute remote paths")
+     if not math.isfinite(args.follow_distance_scale) or not .05 <= args.follow_distance_scale <= 5:
+--- a/vlm_reasoner.py
++++ b/vlm_reasoner.py
+@@ -276,7 +276,7 @@
+             self.executor.shutdown(wait=False, cancel_futures=True)
+ 
+ 
+-def serve(model_path, min_route_entailment=None, camera_calibration=None, follow_person=False, follow_gap=1.0, follow_distance_scale=1.0, openjev_follow_model=None, openjev_follow_head=None):
++def serve(model_path, min_route_entailment=None, camera_calibration=None, follow_person=False, follow_gap=1.0, follow_distance_scale=1.0, openjev_follow_model=None, openjev_follow_head=None, openjev_turns_only=False):
+     import importlib.util
+     import torch
+     deberta = (Path(model_path) / "navigation_config.json").is_file()
+@@ -301,7 +301,7 @@
+     with redirect_stdout(sys.stderr):
+         if follow_person:
+             from person_follow import PersonFollower
+-            model = PersonFollower(model_path, camera_calibration, follow_gap, follow_distance_scale, openjev_follow_model, openjev_follow_head)
++            model = PersonFollower(model_path, camera_calibration, follow_gap, follow_distance_scale, openjev_follow_model, openjev_follow_head, openjev_turns_only)
+         elif camera_deberta:
+             model = DebertaCameraNavigation(model_path, camera_calibration)
+         elif deberta:
+@@ -477,7 +477,10 @@
+     parser.add_argument("--follow-distance-scale", type=float, default=1.0)
+     parser.add_argument("--openjev-follow-model", type=Path)
+     parser.add_argument("--openjev-follow-head", type=Path)
++    parser.add_argument("--openjev-turns-only", action="store_true")
+     args = parser.parse_args()
++    if args.openjev_turns_only and not args.openjev_follow_model:
++        parser.error("Hybrid steering requires --openjev-follow-model")
+     if args.openjev_follow_head and not args.openjev_follow_model:
+         parser.error("A following head requires --openjev-follow-model")
+     if args.openjev_follow_model and (not args.follow_person or args.follow_gap != .5):
+@@ -485,6 +488,6 @@
+     if args.check:
+         check()
+     elif args.serve and args.model is not None:
+-        serve(args.model, args.min_route_entailment, args.camera_calibration, args.follow_person, args.follow_gap, args.follow_distance_scale, args.openjev_follow_model, args.openjev_follow_head)
++        serve(args.model, args.min_route_entailment, args.camera_calibration, args.follow_person, args.follow_gap, args.follow_distance_scale, args.openjev_follow_model, args.openjev_follow_head, args.openjev_turns_only)
+     else:
+         parser.error("Use --check or --serve --model PATH")
+--- a/person_follow.py
++++ b/person_follow.py
+@@ -170,7 +170,7 @@
+ 
+ 
+ class PersonFollower:
+-    def __init__(self, model_path, calibration, gap=1.0, distance_scale=1.0, openjev_model=None, openjev_head=None):
++    def __init__(self, model_path, calibration, gap=1.0, distance_scale=1.0, openjev_model=None, openjev_head=None, openjev_turns_only=False):
+         import torch
+         from torchvision.models.detection import ssdlite320_mobilenet_v3_large
+         from rgb_obstacles import RGBObstacleGuard
+@@ -204,7 +204,7 @@
+             from openjev_follow import OpenJevFollower
+             if gap != .5:
+                 raise ValueError("The OpenJEV following experiment requires a 0.5 metre gap")
+-            self.steering_model = OpenJevFollower(openjev_model, openjev_head)
++            self.steering_model = OpenJevFollower(openjev_model, openjev_head, turns_only=openjev_turns_only)
+         blank = np.zeros((240, 320, 3), dtype=np.uint8)
+         with torch.inference_mode():
+             self.detector([torch.zeros((3, 240, 320), device="cuda:0")])
+--- a/robot_steering.py
++++ b/robot_steering.py
+@@ -262,6 +262,31 @@
+                         if not self.enabled or self.revision != active_revision:
+                             continue
+                     direction, lease, frame_id = drive_intent(self.relay, time.monotonic())
++                    if (getattr(self.relay.args, "openjev_turns_only", False)
++                            and direction in {"left", "right"} and direction != self.direction):
++                        # Stop forward drive (or the opposite turn) before pivoting.
++                        # Status verifies motor output, not physical wheel velocity.
++                        self.stop_robot()
++                        session = None
++                        with self.lock:
++                            self.direction = "stop"
++                            self.message = "Stopping motor output before OpenJEV turn"
++                        self.relay.stopping.wait(.05)
++                        stopped = self.request("/status")
++                        if not (stopped.get("direction") == "stop" and stopped.get("speed") == 0
++                                and stopped.get("pwm1_duty") == 0 and stopped.get("pwm2_duty") == 0
++                                and stopped.get("driver_enabled") is False):
++                            raise WaitingForRobot("Waiting for stopped motor output before turning")
++                        if self.stop_distance_cm is not None:
++                            self.update_distance(stopped)
++                        session = self.request("/arm", {}).get("session")
++                        if type(session) is not int or not 0 < session <= 0xffffffff:
++                            raise ValueError("Invalid robot control session")
++                        sequence = 0
++                        direction, lease, frame_id = drive_intent(self.relay, time.monotonic())
++                        with self.lock:
++                            if not self.enabled or self.revision != active_revision:
++                                continue
+                     sent = time.monotonic()
+                     speed = 0 if direction == "stop" else self.speed if direction == "straight" else self.turn_speed
+                     sequence += 1
