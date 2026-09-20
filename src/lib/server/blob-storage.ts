@@ -2,6 +2,7 @@ import { BlobPreconditionFailedError, get, put } from "@vercel/blob";
 import { setTimeout as delay } from "node:timers/promises";
 import { createSeed } from "../demo-data.ts";
 import { object } from "./json-file.ts";
+import { AppError } from "./store.ts";
 import { fromDocuments, toDocuments, validateDocuments, type StoredState } from "./storage.ts";
 
 export class StorageConflict extends Error {}
@@ -15,9 +16,13 @@ export interface JsonObjectClient {
 export const vercelObjectClient: JsonObjectClient = {
   async read(path) {
     // CDN-cached Blob reads can be stale. Always read the origin for retail facts.
-    const result = await get(path, { access: "private", useCache: false, abortSignal: AbortSignal.timeout(8_000) });
+    const result = await get(path, { access: "private", useCache: false,
+      // Compression can turn the version into a weak W/ ETag. Conditional
+      // writes require the strong tag for the original stored representation.
+      headers: { "Accept-Encoding": "identity" }, abortSignal: AbortSignal.timeout(8_000) });
     if (!result) return null;
     if (result.statusCode !== 200 || !result.stream || !result.blob.etag) throw new Error("Inventory storage did not return current data.");
+    if (result.blob.etag.startsWith("W/")) throw new AppError("Shared inventory storage returned a weak version tag. Please retry.", 503);
     return { value: await new Response(result.stream).json(), etag: result.blob.etag };
   },
   async write(path, value, etag) {
@@ -75,6 +80,6 @@ export class BlobStateStorage {
         await delay(10 + Math.random() * 30);
       }
     }
-    throw new Error("Inventory is busy. Please retry the request.");
+    throw new AppError("Inventory changed repeatedly while saving. Please retry the request.", 409);
   }
 }

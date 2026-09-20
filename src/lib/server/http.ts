@@ -22,7 +22,8 @@ export function compartmentField(body: Record<string, unknown>) {
 }
 
 export function errorResponse(error: unknown) {
-  if (error instanceof AppError) return Response.json({ error: error.message }, { status: error.status });
+  const headers = { "Cache-Control": "no-store", "X-Vendigo-Commit": process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || "local" };
+  if (error instanceof AppError) return Response.json({ error: error.message }, { status: error.status, headers });
   console.error("Vendigo request failed:", error);
-  return Response.json({ error: "Vendigo couldn’t complete that request. Please try again." }, { status: 500 });
+  return Response.json({ error: "Vendigo couldn’t complete that request. Please try again." }, { status: 500, headers });
 }

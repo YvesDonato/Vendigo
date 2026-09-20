@@ -139,7 +139,7 @@ test("the real Blob SDK bypasses cache and sends conditional private writes", as
   const dispatcher = getGlobalDispatcher(); const mock = new MockAgent();
   mock.disableNetConnect(); setGlobalDispatcher(mock);
   t.after(async () => { setGlobalDispatcher(dispatcher); await mock.close(); });
-  mock.get("https://teststore.private.blob.vercel-storage.com").intercept({ path: "/test.json?cache=0" })
+  mock.get("https://teststore.private.blob.vercel-storage.com").intercept({ path: "/test.json?cache=0", headers: { "accept-encoding": "identity" } })
     .reply(200, { version: 1 }, { headers: { etag: "v1" } });
   mock.get("https://vercel.com").intercept({ path: "/api/blob/?pathname=test.json", method: "PUT", headers: { "x-if-match": "v1", "x-allow-overwrite": "1", "x-vercel-blob-access": "private" } })
     .reply(200, { url: "https://teststore.private.blob.vercel-storage.com/test.json", pathname: "test.json", etag: "v2" });
