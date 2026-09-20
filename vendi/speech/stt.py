@@ -1,4 +1,4 @@
-"""Local streaming STT, using the Vosk approach already present in food_robot/."""
+"""Optional local streaming Vosk STT and explicit scripted input for tests."""
 
 import asyncio
 from collections import deque

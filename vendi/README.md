@@ -1,9 +1,18 @@
 # Vendi voice
 
 Vendi is a concise, confident street vendor: an adult American female voice with
-warmth, energy, and a little cheek. The Python package follows the existing
-`food_robot` / headless Python architecture and runs independently of the website.
-It does not import the web agent's navigation tools or issue hardware commands.
+warmth, energy, and a little cheek. This package is the maintained Python voice
+agent, with ElevenLabs Scribe recognition, conversation, speech, and live inventory.
+Run it from the repository root after configuring `.env.local`:
+
+```bash
+.venv-vendi/bin/python -m vendi.voice_demo --live --command wake --mic
+```
+
+The voice agent runs independently of the website. It does not import the web
+agent's navigation tools or issue hardware commands. The old standalone headless
+clients, food-vendor speech demos, and MP3 generator have been removed; use this
+package for voice conversations, roaming announcements, and clip generation.
 
 **Start with the laptop demo.** From the repository root, Python 3.9+ is sufficient
 for the offline demo and tests; no dependencies, credentials, or devices are needed:
@@ -49,7 +58,7 @@ CONVERSATION_TIMEOUT=30
 The demo uses Matilda, an adult American female voice with an upbeat alto delivery.
 The voice is selected centrally by `ELEVENLABS_VOICE_ID` in `.env.local` (see `.env.example`). Audition the greeting and sales lines to check
 delivery. The same voice ID, model, and settings generate every spoken line.
-`ELEVENLABS_SPEECH_ENGINE_ID` belongs to the preserved web/headless integration;
+`ELEVENLABS_SPEECH_ENGINE_ID` belongs to the separate website voice integration;
 Vendi's independent pipeline does not require a hosted Speech Engine. A `seng_`
 ID is not a TTS voice ID.
 
@@ -127,7 +136,7 @@ spoken purchase. Omitting `--live` uses explicit stubs. `--no-audio` disables bo
 devices and is for cloud-pipeline checks, not microphone tests. `--check-providers`
 makes one short request to each provider and exits without device access.
 
-**Files and responsibilities.** All implementation files below are new:
+**Files and responsibilities.**
 
 ```text
 vendi/
@@ -171,10 +180,9 @@ tests/test_vendi_conversation.py  General questions, routing collisions, factual
 tests/test_vendi_purchase_guide.py  Session memory, contextual references, paid lifecycle, authorization
 ```
 
-Existing tracked files modified: `.env.example`, `.gitignore`, and root `README.md`.
 Local `.env.local`, `.venv-vendi/`, generated clips, and `.vendi-cache/` are ignored.
-Existing camera, ESP32, motor, payment, servo, storefront, legacy voice files,
-and `food_robot` state-machine code are preserved.
+The shared jingle remains at `food_robot/audio/jingle.wav`. The separate customer
+controller and its tests remain in `food_robot/`; they do not implement this agent.
 
 **Audio ownership and latency.** `AudioManager` queues equal-priority jobs in order
 and cancels a lower-priority active job when a higher-priority request arrives:
@@ -323,8 +331,8 @@ Both Python Vendi and `npm run voice` use this setting.
 Inventory and prices come from the configured web app's store, reread on each
 request: private Vercel Blob when hosted, or `data/inventory.json` in local JSON
 mode. Admin saves and completed purchases appear in the next spoken answer
-without a restart. Conversation
-history resolves references such as “How much are they?” and “How many are left
+without a restart. Conversation history resolves references such as “How much
+are they?” and “How many are left
 now?”; current quantities and prices always come from the fresh response. An
 unreadable store produces “I'm having trouble checking stock right now” instead
 of guessing. STT, TTS, microphone gating,
@@ -383,9 +391,8 @@ exactly `SHOW_MENU`, `CHECK_INVENTORY`, `CHECK_PRICE`, `START_PURCHASE`, and
 `END_CONVERSATION`; ending is consumed within the voice subsystem. No event confirms
 payment or commands a motor/servo. `RETURNING` is only a voice handoff state. After
 an interaction Vendi returns to `IDLE`; the main controller must explicitly resume
-roaming once appropriate. Stop old `food_robot/vendor.py`, hosted headless voice,
-or other playback processes before giving Vendi ownership of the physical audio
-devices. The legacy `npm run voice` path remains a separate integration.
+roaming once appropriate. Give Vendi exclusive ownership of the physical audio
+devices. The website's `npm run voice` server remains a separate integration.
 
 **Temporary and unconnected parts.** The wake implementation is an exact whole
 transcript matcher with a cooldown, not a production acoustic keyword model. The

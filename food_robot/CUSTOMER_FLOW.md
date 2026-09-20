@@ -1,8 +1,8 @@
 # Customer camera interaction
 
-`customer_flow.py` implements and simulates the conversation controller. It is
-not connected to hardware yet. The existing `vendor.py` and `interaction.py`
-are unchanged; running the existing vendor command still only plays audio.
+`customer_flow.py` implements and simulates the customer controller. It is
+not connected to hardware yet. The maintained voice agent is documented in
+[vendi/README.md](../vendi/README.md); this controller does not start it.
 
 Run the simulations without a camera, microphone, speaker, or motors:
 
@@ -42,12 +42,11 @@ This does not recognize the same person after the tracker assigns a new ID.
   identify which customer is near. Call `distance(id, meters, observed_at)`;
   timestamps use the controller's monotonic clock. Reject invalid or stale
   readings in the adapter too. No range is estimated from image size here.
-- **Speech/audio:** implement `Ports` using the chosen speech voice and existing
-  audio player. One component must own audio playback, so the standalone vendor
-  loop cannot keep playing during conversations. `speak` must finish playback
+- **Speech/audio:** implement `Ports` using Vendi's voice API. Vendi must own
+  audio playback and coordinate announcements with conversations. `speak` must finish playback
   before returning. `listen(session_id)` starts bounded asynchronous listening;
   recognized yes/no results call `answer(session_id, result)` on the controller's
-  event loop. The existing blocking speech demo is not yet this adapter.
+  event loop. This adapter has not been implemented.
 - **Ordering:** `show_order_qr(session_id)` must show a real checkout URL tied to
   the session. Only the trusted order backend calls `order_completed(session_id)`
   after an order is accepted. Seeing a QR scan or hearing “done” is insufficient.

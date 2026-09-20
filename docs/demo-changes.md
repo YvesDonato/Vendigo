@@ -39,7 +39,7 @@ preserved.
 | Shop | `src/components/storefront/storefront.tsx`, `src/components/storefront/purchase.tsx` |
 | Dashboard | `src/components/dashboard/dashboard.tsx`, `inventory.tsx`, `analytics.tsx`, `recent-sales.tsx`, `qr-code.tsx`, `src/app/globals.css` |
 | Live Python voice | `vendi/config.py`, `vendi/conversation/agent.py`, `context.py`, `intents.py`, `guardrails.py`, `vendi/voice_demo.py`, `vendi/audio/phrase_manager.py` |
-| Preserved legacy voice integration | `src/agent/live-inventory.ts` (new), `src/agent/run-agent.ts`, `voice-server/server.mts`, `generate_voice.mjs` |
+| Preserved website voice integration | `src/agent/live-inventory.ts` (new), `src/agent/run-agent.ts`, `voice-server/server.mts` |
 | Configuration and documentation | `.env.local` (ignored; voice ID changed, secrets preserved), `.env.example`, `.gitignore`, `package.json`, `README.md`, `vendi/README.md`, `vendi/audio/clips/README.md`, `docs/demo-changes.md` (new) |
 | Tests | `tests/backend.test.ts`, `tests/storage.test.ts` (new), `tests/test_vendi_voice.py`, `tests/test_vendi_live_inventory.py` (new), `tests/verify_live_voice.py` (new), `tests/e2e/demo.spec.ts`, `camera.spec.ts`, `restart.spec.ts` (new), `playwright.config.ts` |
 

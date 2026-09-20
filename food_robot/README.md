@@ -1,51 +1,27 @@
-# Food-vendor audio
+# Customer controller and shared audio
 
-The player starts with the existing jingle, repeats it for seven seconds,
-stops music, plays one existing ElevenLabs vendor or funny announcement, and
-resumes the jingle for another seven seconds. It avoids consecutive repeats of
-the same announcement. Each spoken clip plays to completion before music resumes.
-Music restarts from the beginning after each announcement.
-
-From `/home/admin/auto-dash`, start it explicitly when ready:
+The maintained Vendi voice agent lives in [`vendi/`](../vendi/README.md). From the
+repository root, start real speech and microphone conversation with:
 
 ```bash
-python3 food_robot/vendor.py
+.venv-vendi/bin/python -m vendi.voice_demo --live --command wake --mic
 ```
 
-Stop with Ctrl+C. SIGTERM also stops the active audio child process. Playback
-errors stop the program and remain visible in the terminal.
+Vendi also handles roaming announcements and generates its own speech library.
+The old standalone audio player, launcher, speech demos, and unused MP3 clips
+have been removed.
 
-Defaults use speaker `plughw:0,0` and the existing assets at
-`/home/admin/food_robot/audio`. This directory must contain `jingle.wav` and
-`voice/vendor*.mp3` or `voice/funny*.mp3`. The prerecorded question, yes, no, and
-paid clips are intentionally excluded from announcements. Runtime uses Python's
-standard library, `aplay` for WAV, and `mpg123` with ALSA output for MP3. No cloud
-API calls are made during playback.
+This directory retains:
 
-Optional settings:
+- `audio/jingle.wav`: the shared jingle used by Vendi's default configuration.
+- `customer_flow.py`: the separate customer/controller simulation.
+- `test_customer_flow.py`: the controller's regression tests.
+- [CUSTOMER_FLOW.md](CUSTOMER_FLOW.md): the controller's interfaces and integration notes.
+
+Run the controller simulations and tests from the repository root:
 
 ```bash
-python3 food_robot/vendor.py --min-interval 15 --max-interval 25 --speaker plughw:0,0
-python3 food_robot/vendor.py --audio-dir /path/to/audio
+python3 food_robot/customer_flow.py --answer yes
+python3 food_robot/customer_flow.py --answer no
+python3 -m unittest discover -s food_robot -p 'test_customer_flow.py'
 ```
-
-`/home/admin/food_robot/vendor.py` is a launcher for this same player, so
-`cd /home/admin/food_robot` followed by `python3 vendor.py` also works. Its
-versioned source is `vendor_launcher.py`. The old espeak player is backed up
-beside the installed launcher. Stop any already-running old player with Ctrl+C
-before restarting; simultaneous players or headless voice sessions can compete
-for the same speaker.
-
-This implements the ambient audio portion only. It does not move the car, detect
-people, listen to customers, or verify payment. The intended full controller is:
-
-```text
-roam + jingle/announcements → detect person → approach → stop audio and motors
-→ ask about food → listen for yes/no
-  no: farewell → leave → resume roaming/audio
-  yes: request QR payment → wait for verified payment → thank customer
-       → leave → resume roaming/audio
-```
-
-Connecting that controller requires the actual camera/person-detection interface,
-motor-control interface with stop feedback, and payment-confirmation source.
