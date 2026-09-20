@@ -1,5 +1,5 @@
 [Unit]
-Description=Hawk-2-U authenticated lid API
+Description=Vendigo authenticated lid API
 After=network-online.target
 
 [Service]

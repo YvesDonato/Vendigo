@@ -1,5 +1,5 @@
 [Unit]
-Description=Cloudflare tunnel for the Hawk-2-U lid API
+Description=Cloudflare tunnel for the Vendigo lid API
 Requires=lid-api.service
 After=network-online.target lid-api.service
 ConditionFileNotEmpty=/home/yvesd/Codebases/auto-dash/robot_code/cloudflare-tunnel.token

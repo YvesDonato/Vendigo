@@ -180,7 +180,9 @@ Browser tests start production instances on ports **3100/3101**, plus an isolate
 
 ## Project name
 
-The website, metadata, package, and documentation use **Vendigo** (`vendigo` for the npm package name). The existing [GitHub repository](https://github.com/ericpungholee/Hawk-2-U) and local checkout path are unchanged.
+The website, metadata, package, and documentation use **Vendigo** (`vendigo` for the npm package name). The [GitHub repository](https://github.com/ericpungholee/Vendigo) is named **Vendigo**, and this checkout’s `origin` points to `git@github.com:ericpungholee/Vendigo.git`.
+
+The local checkout directory and installed robot-service paths keep their existing filesystem names so the running app and hardware services continue working. Legacy internal session keys are retained for pickup recovery.
 
 ## Robot voice and customer interaction
 

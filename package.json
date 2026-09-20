@@ -3,7 +3,7 @@
   "description": "Vendigo \u2014 Commerce that comes to you. An autonomous mobile storefront and live operations dashboard.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ericpungholee/Hawk-2-U.git"
+    "url": "git+https://github.com/ericpungholee/Vendigo.git"
   },
   "version": "0.1.0",
   "private": true,
