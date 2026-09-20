@@ -92,7 +92,33 @@ def match_product(text, context):
     return winners[0] if len(winners) == 1 else None
 
 
-def render_intent(intent, context, product_id=None):
+def specific_stock_request(transcript):
+    """Identify an item request only after the caller has classified a stock intent."""
+    text = product_text(transcript)
+    request = re.fullmatch(
+        r"(?:(?:do you (?:have|sell|carry|stock)|have you got|can i (?:get|buy|have)|"
+        r"i want|id like|are you selling) (.+?)|"
+        r"(?:is|are) (.+?) (?:in stock|available|sold out)|"
+        r"how many (.+?) (?:do you have|are left))(?: please| now)?", text)
+    if not request:
+        return False
+    item = next(part for part in request.groups() if part)
+    item = re.sub(r"^(?:any|some|a|an|the) ", "", item)
+    return item not in {"anything", "anything else", "something", "snacks", "snack", "drinks", "drink",
+                        "food", "menu", "something to eat", "something to drink", "it", "that", "them"}
+
+
+def unavailable_stock(context, product=None):
+    text = (f"Sorry, we're out of {product.name} right now. It's sold out." if product else
+            "Sorry, we don't have that in stock.")
+    names = [item.name for item in context.inventory
+             if item.stock > 0 and (product is None or item.id != product.id)][:2]
+    if names:
+        text += " But we do have " + " and ".join(names) + " in stock."
+    return text
+
+
+def render_intent(intent, context, product_id=None, *, transcript=""):
     """Commercial facts are rendered from the snapshot, never from model-written prose."""
     if intent == Intent.END_CONVERSATION:
         return AgentReply("You got it. I'll be around.", intent)
@@ -113,7 +139,9 @@ def render_intent(intent, context, product_id=None):
         if not context.inventory_known:
             text = "I don't have the current stock list. Scan the QR code for the latest menu."
         elif product is not None:
-            text = f"{product.name} is in stock—{product.stock} left." if product.stock > 0 else f"We're out of {product.name} right now. It's sold out."
+            text = f"{product.name} is in stock—{product.stock} left." if product.stock > 0 else unavailable_stock(context, product)
+        elif specific_stock_request(transcript):
+            text = unavailable_stock(context)
         else:
             names = [item.name for item in context.inventory if item.stock > 0]
             text = ("Right now I've got " + ", ".join(names[:5]) + ". Take a look at the QR menu!" if names else

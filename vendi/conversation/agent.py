@@ -62,6 +62,9 @@ Actual menu/stock/price/purchase requests can use only these intents: SHOW_MENU,
 CHECK_INVENTORY, CHECK_PRICE, START_PURCHASE, END_CONVERSATION. START_PURCHASE means
 an explicit request to start buying, never a how-to question or 'and then?'. Use a
 product_id from the current inventory when the reference is clear; otherwise null.
+For stock checks or requests to get an item absent from the inventory, use
+CHECK_INVENTORY with a null product_id. Do not substitute another product's ID;
+code supplies in-stock alternatives. Purchase-procedure explanations stay explanations.
 Code renders current commercial facts for these intents; don't invent their prose.
 Use topic order for a customer's actual order/payment STATUS question, not a
 question about the payment procedure. Code renders verified order/payment status.
@@ -109,7 +112,7 @@ def validate_reply(raw, context, transcript):
             raise VoiceFailure("llm", "Give a concise, complete explanation.")
         return AgentReply(validate_procedure(text, raw["topic"], context), product_id=product_id)
     if intent:
-        return render_intent(intent, context, product_id)
+        return render_intent(intent, context, product_id, transcript=transcript)
     if raw["topic"] == "order":
         return order_reply(transcript, context)
     text = raw["reply"].strip()
@@ -244,7 +247,7 @@ class ConversationAgent:
                 elif stale_reference:
                     reply = AgentReply("I can't verify that item in the current inventory. Check the QR menu for the latest.")
                 else:
-                    reply = render_intent(intent, application, product_id)
+                    reply = render_intent(intent, application, product_id, transcript=transcript)
             elif not resolution["expected_purchase_topic"] and is_order_request(transcript):
                 reply = order_reply(transcript, application)
             elif is_hardware_request(transcript):

@@ -14,6 +14,11 @@ agent's navigation tools or issue hardware commands. The old standalone headless
 clients, food-vendor speech demos, and MP3 generator have been removed; use this
 package for voice conversations, roaming announcements, and clip generation.
 
+For unattended Raspberry Pi use, see [the boot-service deployment instructions](deploy/README.md).
+The persistent listener stays available after “bye” or silence and restarts after
+failures. Speech spells out dollar amounts, and unavailable-item replies offer up
+to two alternatives from verified current stock.
+
 **Start with the laptop demo.** From the repository root, Python 3.9+ is sufficient
 for the offline demo and tests; no dependencies, credentials, or devices are needed:
 

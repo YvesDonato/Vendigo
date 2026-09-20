@@ -11,11 +11,12 @@ import wave
 from vendi.audio.backend import wav_chunks, wav_format
 from vendi.audio.speech_pcm import trim_speech
 from vendi.errors import VoiceFailure
+from vendi.speech.spoken_prices import spoken_prices
 
 
 RATE = 24000
-VOICE_SETTINGS = {"stability": 0.45, "similarity_boost": 0.8, "style": 0.15,
-                  "use_speaker_boost": True, "speed": 1.05}
+VOICE_SETTINGS = {"stability": 0.5, "similarity_boost": 0.8, "style": 0.0,
+                  "use_speaker_boost": True, "speed": 1.0}
 
 
 class ElevenLabsTTS:
@@ -23,15 +24,16 @@ class ElevenLabsTTS:
         self.config = config
         self._client = client
         self._owns_client = client is None
-        identity = json.dumps([config.elevenlabs_voice_id, config.elevenlabs_model, VOICE_SETTINGS, RATE], sort_keys=True)
+        identity = json.dumps([config.elevenlabs_voice_id, config.elevenlabs_model, VOICE_SETTINGS, RATE,
+                               "spoken-prices-v1"], sort_keys=True)
         self.voice_key = hashlib.sha256(identity.encode()).hexdigest()[:16]
 
     def cache_path(self, text):
-        key = hashlib.sha256(text.encode()).hexdigest()
+        key = hashlib.sha256(spoken_prices(text).encode()).hexdigest()
         return self.config.cache_dir / "speech" / self.voice_key / f"{key}.wav"
 
     def phrase_path(self, phrase):
-        key = hashlib.sha256(phrase.text.encode()).hexdigest()[:12]
+        key = hashlib.sha256(spoken_prices(phrase.text).encode()).hexdigest()[:12]
         return self.config.clips_dir / self.voice_key / phrase.category / f"{phrase.id}-{key}.wav"
 
     def _http(self):
@@ -58,6 +60,7 @@ class ElevenLabsTTS:
         text = text.strip()
         if not text or len(text) > 1200:
             raise VoiceFailure("tts", "Speech text must contain 1–1200 characters.")
+        text = spoken_prices(text)
         path = Path(output_path) if output_path else self.cache_path(text)
         if path.is_file():
             try:

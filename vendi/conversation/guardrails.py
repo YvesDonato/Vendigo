@@ -6,7 +6,7 @@ of arbitrary text. Actual commercial facts always come from application template
 
 import re
 
-from vendi.conversation.intents import AgentReply, Intent, deterministic_intent, match_product, order_reply, render_intent
+from vendi.conversation.intents import AgentReply, Intent, deterministic_intent, match_product, order_reply, render_intent, specific_stock_request
 from vendi.speech.yes_no import normalize
 
 
@@ -52,8 +52,13 @@ def guard_social_reply(text, context, transcript):
                         subject + r" (?:is|are) "
                         r"(?:currently |still )?(?:in stock|available|sold out|out of stock)\b|"
                         r"\b(?:were|we are|im|i am) (?:sold )?out of\b")
-        if re.search(availability, normalized):
-            return render_intent(Intent.CHECK_INVENTORY, context, match_product(sentence, context))
+        missing_stock = (specific_stock_request(transcript) and
+                         re.search(r"\b(?:i|we) (?:dont|do not) have\b.*\bin stock\b", normalized))
+        if re.search(availability, normalized) or missing_stock:
+            # An alternative named by the model must not replace the requested item.
+            product_id = (match_product(transcript, context) if specific_stock_request(transcript)
+                          else match_product(sentence, context))
+            return render_intent(Intent.CHECK_INVENTORY, context, product_id, transcript=transcript)
         # Model-written quantity prose must pass through the same live renderer,
         # including a model that incorrectly labels a stock answer as social.
         quantity = r"(?:\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten|no|a few|plenty|lots)"

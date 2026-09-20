@@ -78,6 +78,16 @@ class LiveInventoryTests(unittest.IsolatedAsyncioTestCase):
         self.data["products"][0]["enabled"] = False
         self.assertIn("sold out", (await self.agent.respond("Do you have Coke?")).text)
 
+    async def test_alternatives_exclude_disabled_and_zero_stock_products(self):
+        self.data["inventory"][0]["stock"] = 0
+        self.data["products"][1]["enabled"] = False
+        reply = await self.agent.respond("Do you have Coke?")
+        self.assertIn("But we do have Chips in stock.", reply.text)
+        self.assertNotIn("Coke Zero", reply.text)
+        self.data["inventory"][2]["stock"] = 0
+        reply = await self.agent.respond("Do you have Coke?")
+        self.assertNotIn("But we do have", reply.text)
+
     async def test_model_quantity_prose_is_replaced_with_current_facts(self):
         context = await self.agent.context.snapshot()
         for prose in ("Coca-Cola has 999 left.", "There are 999 Cokes left.", "Three Cokes remaining."):

@@ -465,6 +465,34 @@ class TTSTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(self.tts.cache_path("hello").exists())
         self.assertFalse(list(Path(self.directory.name).rglob("*.tmp")))
 
+    async def test_price_is_spelled_out_in_provider_request_and_cache(self):
+        async for _ in self.tts.stream("KitKat is 1.00 CAD."):
+            pass
+        request = self.http.calls[0][1]["json"]
+        self.assertEqual(request["text"], "KitKat is one dollar.")
+        async for _ in self.tts.stream("KitKat is one dollar."):
+            pass
+        self.assertEqual(len(self.http.calls), 1)
+
+    async def test_pre_fix_cached_price_audio_is_not_reused(self):
+        import hashlib
+        import json
+        old_settings = {"stability": 0.45, "similarity_boost": 0.8, "style": 0.15,
+                        "use_speaker_boost": True, "speed": 1.05}
+        identity = json.dumps([self.config.elevenlabs_voice_id, self.config.elevenlabs_model,
+                               old_settings, 24000], sort_keys=True)
+        voice_key = hashlib.sha256(identity.encode()).hexdigest()[:16]
+        text = "KitKat is 1.00 CAD."
+        old_path = self.config.cache_dir / "speech" / voice_key / (hashlib.sha256(text.encode()).hexdigest() + ".wav")
+        old_path.parent.mkdir(parents=True)
+        with wave.open(str(old_path), "wb") as audio:
+            audio.setparams((1, 2, 24000, 0, "NONE", "not compressed"))
+            audio.writeframes(b"\0\x10" * 2400)
+        async for _ in self.tts.stream(text):
+            pass
+        self.assertEqual(len(self.http.calls), 1)
+        self.assertEqual(self.http.calls[0][1]["json"]["text"], "KitKat is one dollar.")
+
     async def test_provider_failure_does_not_leave_partial_clip_or_leak_message(self):
         self.http.response = FakeResponse(error=RuntimeError("secret-provider-details"))
         with self.assertRaises(VoiceFailure) as caught:

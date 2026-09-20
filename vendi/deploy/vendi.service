@@ -1,0 +1,24 @@
+[Unit]
+Description=Vendi persistent voice agent
+Wants=network-online.target
+After=network-online.target sound.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=admin
+Group=admin
+SupplementaryGroups=audio
+WorkingDirectory=/home/admin/Vendigo
+Environment=PYTHONUNBUFFERED=1
+# Share the manual launcher's lock; exec preserves it without an extra parent.
+ExecStart=/usr/bin/flock --no-fork --nonblock --conflict-exit-code 75 /home/admin/Vendigo/.vendi-cache/voice.lock /home/admin/Vendigo/.venv/bin/python -u -m vendi.voice_service
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+TimeoutStopSec=15
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

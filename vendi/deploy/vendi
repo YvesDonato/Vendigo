@@ -1,0 +1,9 @@
+#!/bin/sh
+# Launch Vendi's manual commands with the Pi audio configuration and shared lock.
+set -eu
+cd /home/admin/Vendigo
+if [ "$#" -eq 0 ]; then
+    set -- --live --command wake --mic
+fi
+exec flock --nonblock --conflict-exit-code 75 /home/admin/Vendigo/.vendi-cache/voice.lock \
+    /home/admin/Vendigo/.venv/bin/python -u -m vendi.voice_demo "$@"
