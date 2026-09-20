@@ -12,6 +12,7 @@ from vendi.conversation.agent import DemoAgent
 from vendi.conversation.context import StaticContext
 from vendi.errors import VoiceFailure
 from vendi.events import EventType
+from vendi.shopping_gate import GateDecision
 from vendi.speech.scribe import ScribeSTT
 from vendi.speech.turn import TurnProgress, is_hesitation
 from vendi.speech.tts import SilentTTS
@@ -197,6 +198,7 @@ class ConversationTimingTests(unittest.IsolatedAsyncioTestCase):
                            backend=SilentBackend(), tts=SilentTTS(), stt=stt,
                            agent=DemoAgent(StaticContext()), on_event=events.append)
         try:
+            voice.shopping_gate.classify = AsyncMock(return_value=GateDecision("shopping", 0.99))
             await voice.enter_conversation(listen=True)
             await asyncio.wait_for(voice._loop_task, 1)
             self.assertEqual(stt.calls, 2)
@@ -238,7 +240,7 @@ class ConversationTimingTests(unittest.IsolatedAsyncioTestCase):
         finally:
             await voice.close()
 
-    async def test_inactivity_timer_does_not_interrupt_active_customer_speech(self):
+    async def test_shopping_window_preserves_turn_beyond_legacy_demo_timeout(self):
         class SlowCustomer:
             max_turn_timeout = 1
             async def transcribe_turn(self, chunks, idle_timeout, on_activity, on_ready):
@@ -252,6 +254,7 @@ class ConversationTimingTests(unittest.IsolatedAsyncioTestCase):
                            backend=SilentBackend(), tts=SilentTTS(), stt=SlowCustomer(),
                            agent=DemoAgent(StaticContext()), on_event=events.append)
         try:
+            voice.shopping_gate.classify = AsyncMock(return_value=GateDecision("shopping", 0.99))
             await voice.enter_conversation(listen=True)
             await asyncio.sleep(0.25)
             ended = [event for event in events if event.type == EventType.CONVERSATION_ENDED]

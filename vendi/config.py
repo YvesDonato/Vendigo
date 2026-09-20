@@ -26,6 +26,8 @@ class VoiceConfig:
     elevenlabs_model: str = "eleven_flash_v2_5"
     openai_api_key: str = field(default="", repr=False)
     openai_model: str = "gpt-5.6-luna"
+    shopping_gate_model: str = "gpt-4.1-mini"
+    shopping_gate_timeout: float = 3
     app_url: str = "http://127.0.0.1:3000"
     audio_input: str = ""
     audio_output: str = ""
@@ -48,7 +50,7 @@ class VoiceConfig:
     max_cached_clips: int = 128
 
     def __post_init__(self):
-        for name in ("conversation_timeout", "listen_timeout", "request_timeout", "wake_cooldown", "max_utterance", "speech_rms_threshold"):
+        for name in ("conversation_timeout", "listen_timeout", "request_timeout", "wake_cooldown", "max_utterance", "speech_rms_threshold", "shopping_gate_timeout"):
             value = getattr(self, name)
             if not math.isfinite(value) or value <= 0:
                 raise ValueError(f"{name} must be finite and positive")
@@ -73,6 +75,7 @@ class VoiceConfig:
             "elevenlabs_api_key": "ELEVENLABS_API_KEY", "elevenlabs_voice_id": "ELEVENLABS_VOICE_ID",
             "elevenlabs_model": "ELEVENLABS_MODEL", "openai_api_key": "OPENAI_API_KEY",
             "openai_model": "OPENAI_MODEL", "audio_input": "VENDI_AUDIO_INPUT",
+            "shopping_gate_model": "VENDI_GATE_MODEL",
             "app_url": "VENDIGO_APP_URL",
             "audio_output": "VENDI_AUDIO_OUTPUT", "vosk_model_path": "VENDI_VOSK_MODEL_PATH",
             "stt_provider": "VENDI_STT_PROVIDER", "stt_model": "VENDI_STT_MODEL",
@@ -83,6 +86,7 @@ class VoiceConfig:
             "funny_probability": "VENDI_FUNNY_PROBABILITY", "phrase_probability": "VENDI_PHRASE_PROBABILITY",
             "end_silence": "VENDI_END_SILENCE", "max_utterance": "VENDI_MAX_UTTERANCE",
             "speech_rms_threshold": "VENDI_SPEECH_RMS_THRESHOLD",
+            "shopping_gate_timeout": "VENDI_GATE_TIMEOUT",
         }
         paths = {"clips_dir": "VENDI_CLIPS_DIR", "cache_dir": "VENDI_CACHE_DIR", "jingle_path": "VENDI_JINGLE_PATH"}
         values = {key: os.environ[env] for key, env in strings.items() if os.getenv(env)}

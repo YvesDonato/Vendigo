@@ -15,6 +15,7 @@ from vendi.conversation.agent import ConversationAgent
 from vendi.conversation.intents import Intent
 from vendi.errors import AudioInterrupted, VoiceFailure
 from vendi.events import EventType, VoiceEvent
+from vendi.shopping_gate import ShoppingIntentGate, SESSION_SECONDS
 from vendi.speech.stt import VoskSTT
 from vendi.speech.scribe import ScribeSTT
 from vendi.speech.turn import is_hesitation
@@ -26,7 +27,7 @@ from vendi.voice_state import StateMachine, VoiceState as S
 
 class VendiVoice:
     def __init__(self, config=None, *, backend=None, tts=None, stt=None, agent=None,
-                 context=None, wake_word=None, on_event=None, on_speech=None, rng=None):
+                 context=None, wake_word=None, shopping_gate=None, on_event=None, on_speech=None, rng=None):
         self.config = config or VoiceConfig.from_env()
         self.on_event = on_event or (lambda event: None)
         self.on_speech = on_speech or (lambda text: None)
@@ -40,6 +41,8 @@ class VendiVoice:
                           VoskSTT(self.config.vosk_model_path, self.config.end_silence,
                                   self.config.max_utterance, self.config.speech_rms_threshold))
         self.agent = agent or ConversationAgent(self.config, context)
+        self.shopping_gate = shopping_gate or ShoppingIntentGate(self.config)
+        self._shopping_conversation = False
         self.wake_word = wake_word or TranscriptWakeWord(self.config.wake_cooldown)
         self.rng = rng or random.Random()
         self.phrases = PhraseManager(self.rng, self.config.funny_probability)
@@ -183,26 +186,55 @@ class VendiVoice:
         if self.mode == S.ROAMING_AUDIO:
             self.machine.transition(S.IDLE)
 
-    async def _listen(self, timeout, priority=Priority.CONVERSATION):
+    async def _listen(self, timeout, priority=Priority.CONVERSATION, *, gated=False):
         try:
             def activity():
-                self._last_activity = time.monotonic()
+                if not gated:
+                    self._last_activity = time.monotonic()
             text = await self.audio.listen(self.stt, timeout, priority, on_activity=activity,
                 on_ready=lambda: self._emit(EventType.LISTENING_READY))
-            if text:
+            if text and not gated:
                 self._emit(EventType.TRANSCRIPT_RECEIVED, text=text)
             return text
         except AudioInterrupted:
             return None
         except Exception as error:
             self._error(error)
-            await self._fallback(priority)
+            if not gated:
+                await self._fallback(priority)
             return None
 
     async def test_microphone(self):
         """A bounded dev capture through the same half-duplex audio owner."""
         await self.stop_roaming()
         return await self._listen(self.config.listen_timeout)
+
+    async def listen_for_shopping(self):
+        """Passive capture; raw speech neither refreshes a session nor reaches UI."""
+        await self.stop_roaming()
+        return await self._listen(SESSION_SECONDS, gated=True)
+
+    async def handle_microphone_transcript(self, transcript):
+        """The only conversation ingress for finalized, ambient microphone speech."""
+        if self._closed or self._stopping or self.mode not in (S.IDLE, S.CONVERSATION):
+            return None
+        if self.mode == S.CONVERSATION and self._shopping_conversation and not self.shopping_gate.active:
+            await self.end_conversation("timeout", silent=True)
+        generation, session = self._generation, self.session_id
+        decision = await self.shopping_gate.classify(transcript, getattr(self.agent, "history", ()))
+        if (not decision.allowed or self._closed or self._stopping
+                or generation != self._generation or session != self.session_id):
+            return None
+        if self.mode == S.IDLE:
+            if not await self.enter_conversation(shopping=True, greet=False):
+                return None
+        self.shopping_gate.activate()
+        self._emit(EventType.TRANSCRIPT_RECEIVED, text=transcript)
+        reply = await self.handle_transcript(transcript)
+        if self.mode == S.CONVERSATION:
+            # Give the customer 30 seconds after the completed valid interaction.
+            self.shopping_gate.activate()
+        return reply
 
     async def say_customer_greeting(self):
         async with self._start_lock:
@@ -289,7 +321,7 @@ class VendiVoice:
             await self.start_roaming()
         return detected
 
-    async def enter_conversation(self, listen=False):
+    async def enter_conversation(self, listen=False, *, shopping=False, greet=True):
         async with self._start_lock:
             if self._closed or self._stopping or self.mode not in (S.IDLE, S.ROAMING_AUDIO):
                 return False
@@ -299,18 +331,24 @@ class VendiVoice:
                 return False
             self.session_id = uuid.uuid4().hex
             self._session_kind = "conversation"
+            self._shopping_conversation = shopping or listen
+            self.shopping_gate.reset()
+            if self._shopping_conversation:
+                self.shopping_gate.activate()
             self.agent.reset()
             self.machine.transition(S.CONVERSATION)
             self._emit(EventType.PAUSE_MOVEMENT_REQUESTED, reason="customer_conversation")
             self._emit(EventType.CONVERSATION_STARTED)
             self._turn_task = asyncio.current_task()
         try:
-            if not await self._phrase("wake", Priority.CONVERSATION):
+            if greet and not await self._phrase("wake", Priority.CONVERSATION):
                 self._return_control("speech_failed")
                 return False
         finally:
             self._turn_task = None
         self._last_activity = time.monotonic()
+        if self._shopping_conversation:
+            self.shopping_gate.activate()
         self._timer_task = asyncio.create_task(self._watch_inactivity())
         if listen:
             self._loop_task = asyncio.create_task(self._conversation_loop())
@@ -319,12 +357,12 @@ class VendiVoice:
     async def _conversation_loop(self):
         failures = 0
         while self.mode == S.CONVERSATION:
-            remaining = self.config.conversation_timeout - (time.monotonic() - self._last_activity)
+            remaining = self._conversation_remaining()
             if remaining <= 0:
                 return
             # Keep one capture open through idle conversation time; reopening every
             # eight seconds creates gaps where the start of a sentence can disappear.
-            text = await self._listen(remaining)
+            text = await self._listen(remaining, gated=self._shopping_conversation)
             if text is None:
                 failures += 1
                 if failures < 2 and self.mode == S.CONVERSATION:
@@ -334,7 +372,7 @@ class VendiVoice:
                 return
             failures = 0
             if text:
-                await self.handle_transcript(text)
+                await self.handle_microphone_transcript(text)
             else:
                 # Silence is not a turn, an error, or a reason for an LLM call.
                 await asyncio.sleep(0.05)
@@ -369,18 +407,28 @@ class VendiVoice:
                 self._last_activity = time.monotonic()
                 self._turn_task = None
 
+    def _conversation_remaining(self):
+        if self._shopping_conversation:
+            return self.shopping_gate.remaining
+        return self.config.conversation_timeout - (time.monotonic() - self._last_activity)
+
     async def _watch_inactivity(self):
         while self.mode == S.CONVERSATION:
-            remaining = self.config.conversation_timeout - (time.monotonic() - self._last_activity)
+            remaining = self._conversation_remaining()
             if remaining > 0:
                 await asyncio.sleep(remaining)
             elif self._turn_task:
                 await asyncio.sleep(0.1)  # A bounded provider/speaker turn is active, not inactivity.
+            elif self._shopping_conversation and self._loop_task is None:
+                # The persistent service owns capture. Expire only context, keeping
+                # its current STT turn open so late speech can be classified afresh.
+                self._return_control("timeout")
+                return
             else:
-                await self.end_conversation("timeout")
+                await self.end_conversation("timeout", silent=self._shopping_conversation)
                 return
 
-    async def end_conversation(self, reason="application"):
+    async def end_conversation(self, reason="application", *, silent=False):
         if self._session_kind != "conversation" or self._ending_session == self.session_id:
             return
         session = self._ending_session = self.session_id
@@ -390,7 +438,8 @@ class VendiVoice:
             await self.audio.stop_all()
             if generation != self._generation or self.session_id != session or self._stopping:
                 return
-            await self._phrase("goodbye", Priority.CONVERSATION)
+            if not silent:
+                await self._phrase("goodbye", Priority.CONVERSATION)
             if self.session_id == session:
                 self._return_control(reason)
         finally:
@@ -414,6 +463,8 @@ class VendiVoice:
     def _return_control(self, reason):
         kind = self._session_kind
         self._session_kind = None
+        self._shopping_conversation = False
+        self.shopping_gate.reset()
         if self.mode != S.IDLE:
             if self.mode != S.RETURNING:
                 self.machine.transition(S.RETURNING)
@@ -450,6 +501,7 @@ class VendiVoice:
         await self.stop_all_audio()
         await self.audio.close()
         await self.tts.close()
+        await self.shopping_gate.close()
         await self.agent.close()
         if hasattr(self.stt, "close"):
             await self.stt.close()

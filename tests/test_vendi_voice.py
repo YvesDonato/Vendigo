@@ -493,6 +493,37 @@ class TTSTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(self.http.calls), 1)
         self.assertEqual(self.http.calls[0][1]["json"]["text"], "KitKat is one dollar.")
 
+    async def test_vendigo_pronunciation_changes_only_provider_text_and_affected_caches(self):
+        import hashlib
+        text = "Welcome to Vendigo. Coke is $1.00."
+        old_path = self.config.cache_dir / "speech" / self.tts.voice_key / (
+            hashlib.sha256("Welcome to Vendigo. Coke is one dollar.".encode()).hexdigest() + ".wav")
+        old_path.parent.mkdir(parents=True)
+        with wave.open(str(old_path), "wb") as audio:
+            audio.setparams((1, 2, 24000, 0, "NONE", "not compressed"))
+            audio.writeframes(b"\0\x10" * 2400)
+        spoken = []
+        voice = VendiVoice(self.config, backend=SilentBackend(), tts=self.tts,
+                           agent=DemoAgent(StaticContext()), on_speech=spoken.append)
+        try:
+            await voice.speak(text)
+        finally:
+            await voice.close()
+        self.assertEqual(spoken, [text])
+        self.assertEqual(self.http.calls[0][1]["json"]["text"], "Welcome to vend-ee-go. Coke is one dollar.")
+        self.assertNotEqual(self.tts.cache_path(text), old_path)
+        phrase = PhraseManager().choose("yes")
+        self.assertEqual(self.tts.phrase_path(replace(phrase, text="Vendigo")),
+                         self.tts.phrase_path(replace(phrase, text="vend-ee-go")))
+
+    def test_pronunciation_preserves_other_words_and_vendi(self):
+        from vendi.speech.pronunciation import speech_text
+        self.assertEqual(speech_text("Vendi at VENDIGO: Vendigo's shop."),
+                         "Vendi at vend-ee-go: vend-ee-go's shop.")
+        text = "Vendi has vending machines, vendigophile, seven seconds, and $1.00."
+        self.assertEqual(speech_text(text), text.replace("$1.00", "one dollar"))
+        self.assertEqual(speech_text(speech_text("Vendigo $2.50")), speech_text("Vendigo $2.50"))
+
     async def test_provider_failure_does_not_leave_partial_clip_or_leak_message(self):
         self.http.response = FakeResponse(error=RuntimeError("secret-provider-details"))
         with self.assertRaises(VoiceFailure) as caught:

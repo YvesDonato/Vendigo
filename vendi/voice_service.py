@@ -1,6 +1,8 @@
 """Persistent Pi entry point using the existing voice agent's public interface."""
 
 import asyncio
+import logging
+import os
 import signal
 
 from vendi.config import VoiceConfig
@@ -8,37 +10,32 @@ from vendi.conversation.context import VendigoContext
 from vendi.errors import VoiceFailure
 from vendi.events import EventType
 from vendi.voice import VendiVoice
-from vendi.voice_state import VoiceState
 
 
 async def run_forever(voice, has_error=lambda: False):
     """Own input turns serially, staying available between ordinary conversations."""
     try:
-        if not await voice.enter_conversation(listen=False):
-            raise VoiceFailure("service", "Unable to start a conversation; retrying.")
         while True:
             if has_error():
                 raise VoiceFailure("service", "Voice connection or device failed; restarting cleanly.")
-            transcript = await voice.test_microphone()
+            transcript = await voice.listen_for_shopping()
             if has_error():
                 raise VoiceFailure("service", "Voice connection or device failed; restarting cleanly.")
             if not transcript:
                 # Silence or the core inactivity timer interrupting capture is normal.
                 await asyncio.sleep(0.05)
                 continue
-            if voice.mode == VoiceState.IDLE:
-                # Finish cancellation from the previous session before reusing audio.
-                await voice.stop_all_audio()
-                if not await voice.enter_conversation(listen=False):
-                    raise VoiceFailure("service", "Unable to start the next conversation; retrying.")
-            # Exactly one listener: capture has closed before greeting/reply playback.
-            await voice.handle_transcript(transcript)
+            # Rejected speech never opens a conversation or queues audio.
+            await voice.handle_microphone_transcript(transcript)
     finally:
         await voice.close()
 
 
 async def main():
     config = VoiceConfig.from_env()
+    if os.getenv("VENDI_GATE_DEBUG", "").lower() in ("1", "true", "yes"):
+        logging.basicConfig(format="%(message)s")
+        logging.getLogger("vendi.shopping_gate").setLevel(logging.DEBUG)
     failed = False
 
     def event(event):

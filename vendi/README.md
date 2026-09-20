@@ -19,6 +19,48 @@ The persistent listener stays available after “bye” or silence and restarts 
 failures. Speech spells out dollar amounts, and unavailable-item replies offer up
 to two alternatives from verified current stock.
 
+**Shopping intent gate.** The persistent listener starts silently. Final microphone
+transcripts pass through `shopping_gate.py` before reaching the conversational agent.
+Explicit Vendi/Vendigo names (including bounded variants such as Vendy, Vendie,
+Vendego, and “vend ee go”) bypass the model. A few complete shopping entry questions,
+such as “How do I buy this?” and “Which one do you recommend?”, also pass locally;
+quoted or longer versions still require classification. Other utterances use a
+separate small structured classification call, with `shopping` accepted at confidence
+0.90 or higher. A small set of short follow-ups, such as “what about that one?” and
+“do you have another?”, can pass at 0.85 only with active conversation history and
+a model classification of `shopping`. Ambiguity, malformed results, timeouts and provider failures stay
+silent: no conversational request, speech, fallback announcement or transcript UI
+event. The classifier has no inventory access or tools; accepted requests still use
+the main agent's fresh live inventory snapshot.
+The existing deterministic goodbye phrases are accepted locally only during an
+active session, so customers can reliably end the conversation.
+
+A shopping session lasts 30 seconds after the latest accepted interaction completes.
+Only recent accepted conversation is provided for contextual follow-ups; unrelated
+speech is still classified and discarded while active. Background sound, partial
+STT and ignored speech never renew this window. Expiry silently clears conversational
+context; the service continues listening. This window is independent of the legacy
+typed-demo `CONVERSATION_TIMEOUT`. Microphone conversations launched by `--mic` use
+the same gate. Trusted typed turns, explicit purchase consent and application speech
+retain their existing interfaces. Audio still closes capture before playback and
+uses the existing echo guard, so Vendi does not hear its own replies.
+
+The gate uses `VENDI_GATE_MODEL=gpt-4.1-mini` and `VENDI_GATE_TIMEOUT=3` seconds,
+with the existing `OPENAI_API_KEY`, no retries and an 80-token response limit.
+It uses the [Responses structured-output format](https://developers.openai.com/api/docs/guides/structured-outputs).
+Set `VENDI_GATE_DEBUG=1` for service logs, or `--debug` for the microphone demo:
+`[voice] "Do you have Coke?" -> SHOPPING (0.98)`. These are operator logs only;
+confidence is a model score, not a calibrated probability. Keep debug logging off
+when transcript diagnostics are unnecessary.
+
+Written replies keep the spelling **Vendigo**. Only text sent to ElevenLabs changes
+it to **vend-ee-go**; dynamic and pregenerated clip hashes use that pronunciation,
+so old affected clips are regenerated while unrelated clips remain reusable.
+
+For an opt-in classifier evaluation against shopping, background and contextual
+examples, run `.venv/bin/python tests/verify_shopping_gate.py --live`. This uses
+OpenAI credits for synthetic text only; it does not open audio devices or place orders.
+
 **Start with the laptop demo.** From the repository root, Python 3.9+ is sufficient
 for the offline demo and tests; no dependencies, credentials, or devices are needed:
 
@@ -229,8 +271,9 @@ on a fade finishing.
 ElevenLabs Scribe receives 100 ms PCM chunks as the customer speaks. Partial
 transcripts never reach GPT. Committed segments are joined while speech continues;
 the recognizer waits for the configured silence interval before returning a turn.
-Speech activity refreshes conversation inactivity, so a customer starting late
-does not lose the sentence at an eight-second capture boundary. Standalone STT and
+Only accepted shopping interactions refresh the shopping session. In the persistent
+service, expiry clears context without interrupting an ongoing STT capture; the
+completed utterance is then classified in passive mode. Standalone STT and
 purchase prompts use `VENDI_LISTEN_TIMEOUT` only as their speech-start deadline.
 The optional local Vosk path also waits through brief pauses. YES/NO, clear endings, greetings, simple
 menu requests, inventory/price lookups, and order/payment checks are deterministic.

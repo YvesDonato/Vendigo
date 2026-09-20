@@ -11,7 +11,7 @@ import wave
 from vendi.audio.backend import wav_chunks, wav_format
 from vendi.audio.speech_pcm import trim_speech
 from vendi.errors import VoiceFailure
-from vendi.speech.spoken_prices import spoken_prices
+from vendi.speech.pronunciation import speech_text
 
 
 RATE = 24000
@@ -29,11 +29,11 @@ class ElevenLabsTTS:
         self.voice_key = hashlib.sha256(identity.encode()).hexdigest()[:16]
 
     def cache_path(self, text):
-        key = hashlib.sha256(spoken_prices(text).encode()).hexdigest()
+        key = hashlib.sha256(speech_text(text).encode()).hexdigest()
         return self.config.cache_dir / "speech" / self.voice_key / f"{key}.wav"
 
     def phrase_path(self, phrase):
-        key = hashlib.sha256(spoken_prices(phrase.text).encode()).hexdigest()[:12]
+        key = hashlib.sha256(speech_text(phrase.text).encode()).hexdigest()[:12]
         return self.config.clips_dir / self.voice_key / phrase.category / f"{phrase.id}-{key}.wav"
 
     def _http(self):
@@ -60,7 +60,7 @@ class ElevenLabsTTS:
         text = text.strip()
         if not text or len(text) > 1200:
             raise VoiceFailure("tts", "Speech text must contain 1–1200 characters.")
-        text = spoken_prices(text)
+        text = speech_text(text)
         path = Path(output_path) if output_path else self.cache_path(text)
         if path.is_file():
             try:

@@ -4,6 +4,7 @@ import argparse
 import asyncio
 from dataclasses import asdict
 import json
+import logging
 import sys
 
 from vendi.audio.backend import SilentBackend, sounddevice
@@ -103,6 +104,9 @@ async def run_command(voice, command, args):
 
 async def main(args):
     config = VoiceConfig.from_env()
+    if args.debug:
+        logging.basicConfig(format="%(message)s")
+        logging.getLogger("vendi.shopping_gate").setLevel(logging.DEBUG)
     if args.list_devices:
         print(sounddevice().query_devices())
         return 0

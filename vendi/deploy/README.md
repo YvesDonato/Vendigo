@@ -5,11 +5,13 @@ as user `admin`, with the repository at `/home/admin/Vendigo` and Python environ
 at `/home/admin/Vendigo/.venv`. It uses an SF-558 USB microphone and a USB Audio Device
 speaker. Adjust paths, user/group, and ALSA card names when deploying elsewhere.
 
-The system service starts at boot and keeps listening after a conversation ends
-through “bye” or inactivity. The next spoken request starts a new conversation.
-Conversation history resets between customers; ordinary silence does not repeatedly
-trigger greetings. Process, provider, or device failures cause a clean restart after
-five seconds, without a restart-count limit. The Pi needs its own power and internet;
+The system service starts silently at boot and keeps listening after a conversation
+ends through “bye” or inactivity. A shopping request or Vendi/Vendigo wake name starts
+a conversation. Unrelated speech produces no reply, even during an active session.
+After 30 seconds without an accepted interaction, context resets silently. Background
+speech never prolongs that window. Classifier failures stay silent and the next
+transcript can retry; voice-process, STT/TTS, or device failures cause a clean restart
+after five seconds, without a restart-count limit. The Pi needs its own power and internet;
 SSH, tmux, and a connected laptop are not required.
 
 ## Install
@@ -84,8 +86,15 @@ run `sudo systemctl enable --now vendi`.
   available alternative is offered alone; unknown inventory never produces guesses.
 - The persistent entry point uses the existing agent's public methods and audio
   scheduler. It adds no motor, payment, lid, or website actions.
+- Microphone transcripts use a separate shopping gate with a 0.90 acceptance
+  threshold (0.85 for recognized short follow-ups with active history).
+  `VENDI_GATE_MODEL` selects its small classifier (default `gpt-4.1-mini`);
+  `VENDI_GATE_TIMEOUT` defaults to three seconds. `VENDI_GATE_DEBUG=1` enables
+  operator-only classification logs in the journal. See [the voice README](../README.md).
+- “Vendigo” stays unchanged in written replies but is sent to TTS as “vend-ee-go.”
+  Regenerate the clip library after updating to prepare affected prerecorded lines.
 
-Run the 100 offline regression tests:
+Run the offline regression tests:
 
 ```sh
 .venv/bin/python -m unittest discover -s tests -p 'test_vendi*.py'
