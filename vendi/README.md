@@ -307,7 +307,13 @@ Ask “How do I buy something?”, “And then?”, “Then what?”, “If I sc
 does it open?”, “Why?”, and “How long does it stay open?”. To test real product
 references, run the web app first. Live mode fetches `VENDIGO_APP_URL`
 (default `http://127.0.0.1:3000`) on every turn; `--app-url` overrides this.
-Inventory and prices come from the persistent web store, never startup context. STT, TTS, microphone gating,
+Inventory and prices come from `data/inventory.json` through the web app's
+`InventoryStore`, reread on each request. Admin saves, completed purchases, and
+direct file edits appear in the next spoken answer without a restart. Conversation
+history resolves references such as “How much are they?” and “How many are left
+now?”; current quantities and prices always come from the fresh response. An
+unreadable store produces “I'm having trouble checking stock right now” instead
+of guessing. STT, TTS, microphone gating,
 audio priorities, and the existing device command remain unchanged.
 
 **Application integration.** Use one `VendiVoice` instance on one long-lived asyncio

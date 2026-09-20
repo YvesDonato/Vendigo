@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { createSeed } from "../demo-data.ts";
 import { robotHardware, type RobotHardware } from "../robot/hardware.ts";
 import type { AppSnapshot, Order, RobotCommand } from "../../types/index.ts";
-import type { StateStorage, StoredState } from "./storage.ts";
+import { sameStoredState, type StateStorage, type StoredState } from "./storage.ts";
 
 export class AppError extends Error {
   status: number;
@@ -13,6 +13,7 @@ export class AppError extends Error {
 }
 
 export class DemoStore {
+  private readonly serverInstanceId = randomUUID();
   private state = createSeed();
   private listeners = new Set<(snapshot: AppSnapshot) => void>();
   private sessions = new Set<string>();
@@ -50,11 +51,29 @@ export class DemoStore {
 
   private restore(data: StoredState) {
     const saved = structuredClone(data);
+    // Preserve objects held by hardware calls awaiting acknowledgement.
+    saved.state.robots = saved.state.robots.map((robot) => Object.assign(this.state.robots.find((r) => r.id === robot.id) ?? {}, robot));
     this.state = saved.state;
-    this.orders = new Map(saved.orders.map((order) => [order.id, order]));
+    this.orders = new Map(saved.orders.map((order) => {
+      const current = this.orders.get(order.id);
+      if (!current) return [order.id, order];
+      for (const key of Object.keys(current)) if (!(key in order)) Reflect.deleteProperty(current, key);
+      return [order.id, Object.assign(current, order)];
+    }));
     this.sessions = new Set(saved.sessions);
     this.buyers = new Set(saved.buyers);
     this.busy = new Set(saved.orders.filter((order) => !["completed", "failed"].includes(order.status)).map((order) => order.robotId));
+  }
+
+  private refresh() {
+    if (!this.storage) return;
+    const current = this.storage.load();
+    if (!current) throw new Error("Current inventory is unavailable.");
+    if (sameStoredState(current, this.checkpoint)) return;
+    const revision = Math.max(this.state.revision, current.state.revision) + 1;
+    this.restore(current);
+    this.state.revision = revision;
+    this.checkpoint = structuredClone(current);
   }
 
   private scheduleClose(id: string, delay: number) {
@@ -67,7 +86,8 @@ export class DemoStore {
   }
 
   snapshot(): AppSnapshot {
-    return structuredClone({ ...this.state, activeOrders: [...this.orders.values()].filter((o) => !["completed", "failed"].includes(o.status)) });
+    this.refresh();
+    return structuredClone({ ...this.state, serverInstanceId: this.serverInstanceId, activeOrders: [...this.orders.values()].filter((o) => !["completed", "failed"].includes(o.status)) });
   }
 
   subscribe(listener: (snapshot: AppSnapshot) => void) {
@@ -95,6 +115,7 @@ export class DemoStore {
   }
 
   scan(robotId: string, sessionId: string) {
+    this.refresh();
     this.robot(robotId);
     const key = `${robotId}:${sessionId}`;
     if (!this.sessions.has(key)) {
@@ -105,6 +126,7 @@ export class DemoStore {
   }
 
   setInventory(robotId: string, updates: { productId: string; stock: number; expectedStock?: number }[]) {
+    this.refresh();
     this.robot(robotId);
     if (!Array.isArray(updates) || !updates.length || new Set(updates.map((u) => u?.productId)).size !== updates.length) {
       throw new AppError("Send unique product quantities.");
@@ -125,12 +147,14 @@ export class DemoStore {
   }
 
   getOrder(id: string) {
+    this.refresh();
     const order = this.orders.get(id);
     if (!order) throw new AppError("Order not found. Please choose your item again.", 404);
     return structuredClone(order);
   }
 
   async purchase(input: { orderId: string; robotId: string; productId: string; compartmentId: number; sessionId: string }) {
+    this.refresh();
     const previous = this.orders.get(input.orderId);
     if (previous) {
       if (previous.robotId !== input.robotId || previous.productId !== input.productId || previous.sessionId !== input.sessionId || previous.compartmentId !== input.compartmentId) {
@@ -144,7 +168,8 @@ export class DemoStore {
     if (!item || item.compartmentId !== input.compartmentId) throw new AppError("That product and compartment do not match.");
     if (this.state.products.find((p) => p.id === input.productId)?.enabled === false) throw new AppError("That product is unavailable.", 409);
     if (item.stock < 1) throw new AppError("That item just sold out. Please choose another.", 409);
-    return this.open({ id: input.orderId, robotId: robot.id, productId: input.productId, compartmentId: input.compartmentId, sessionId: input.sessionId, locationId: robot.locationId, status: "opening", closesAt: null, error: null });
+    const product = this.state.products.find((p) => p.id === input.productId)!;
+    return this.open({ id: input.orderId, robotId: robot.id, productId: input.productId, productName: product.name, amountCents: product.priceCents, compartmentId: input.compartmentId, sessionId: input.sessionId, locationId: robot.locationId, status: "opening", closesAt: null, error: null });
   }
 
   private async open(order: Order) {
@@ -163,27 +188,33 @@ export class DemoStore {
       this.publish();
       return structuredClone(order);
     }
-    order.status = "unlocked";
-    order.openedAt = Date.now();
-    order.closesAt = order.openedAt + this.duration;
+    const acknowledged = { ...order, status: "unlocked" as const, openedAt: Date.now(), closesAt: Date.now() + this.duration };
     this.scheduleClose(order.id, this.duration);
-    try { this.publish(); }
+    try {
+      this.refresh();
+      Object.assign(order, acknowledged);
+      this.publish();
+    }
     catch (error) {
       // A storage failure after opening must never release the compartment or
       // prevent its close timer. Keep the acknowledgement for the retry.
-      Object.assign(this.orders.get(order.id)!, order);
+      Object.assign(this.orders.get(order.id)!, acknowledged);
       throw error;
     }
     return structuredClone(order);
   }
 
   async close(id: string) {
+    // Even if an operator is temporarily saving malformed JSON, an existing
+    // compartment must still be closed. Completion below requires valid data.
+    let readable = true;
+    try { this.refresh(); } catch { readable = false; }
     let order = this.orders.get(id);
     if (!order || !["unlocked", "lock_failed"].includes(order.status)) return;
     order.status = "locking";
     order.error = null;
     const openedAt = order.openedAt;
-    try { this.publish(); }
+    try { if (readable) this.publish(); }
     catch {
       // Disk trouble must not prevent closing an already-open compartment.
       order = this.orders.get(id)!;
@@ -196,7 +227,7 @@ export class DemoStore {
       order.status = "lock_failed";
       order.error = "The compartment could not relock. Please ask the operator for help.";
       this.robot(order.robotId).status = "stopped";
-      this.publish();
+      if (readable) this.publish();
       return;
     }
     try { this.completePurchase(order); }
@@ -211,13 +242,22 @@ export class DemoStore {
 
   /** The sole completed-purchase commit: record, stock, order and metrics together. */
   private completePurchase(order: Order) {
+    this.refresh();
     if (order.status === "completed") return;
     const interruptedBeforeAcknowledgement = order.productId && !order.openedAt;
     if (order.productId && !interruptedBeforeAcknowledgement && !this.state.transactions.some((t) => t.id === order.id)) {
       const item = this.state.inventory.find((i) => i.robotId === order.robotId && i.productId === order.productId);
       const product = this.state.products.find((p) => p.id === order.productId);
-      if (!item || !product || item.stock < 1) throw new AppError("That item is sold out.", 409);
-      this.state.transactions.unshift({ id: order.id, robotId: order.robotId, productId: product.id, productName: product.name, locationId: order.locationId, amountCents: product.priceCents, createdAt: new Date().toISOString() });
+      if (!item || !product || item.stock < 1) {
+        order.status = "failed";
+        order.error = "Stock changed during pickup. No purchase was recorded; please ask the operator for help.";
+        this.busy.delete(order.robotId);
+        const robot = this.robot(order.robotId);
+        if (robot.status === "selling") robot.status = "available";
+        this.publish();
+        return;
+      }
+      this.state.transactions.unshift({ id: order.id, robotId: order.robotId, productId: product.id, productName: order.productName ?? product.name, locationId: order.locationId, amountCents: order.amountCents ?? product.priceCents, createdAt: new Date().toISOString() });
       item.stock -= 1;
       const buyer = `${order.robotId}:${order.sessionId}`;
       this.buyers.add(buyer);
@@ -232,6 +272,7 @@ export class DemoStore {
   }
 
   async command(robotId: string, command: RobotCommand, compartmentId?: number) {
+    this.refresh();
     const robot = this.robot(robotId);
     if (command === "retry-lock") {
       const order = [...this.orders.values()].find((o) => o.robotId === robotId && o.status === "lock_failed");

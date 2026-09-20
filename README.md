@@ -1,8 +1,9 @@
 # Vendigo
 
 **Commerce that comes to you.** A mobile customer shop, a live retail dashboard,
-and Vendi's ElevenLabs voice. The existing five products, local SVG illustrations,
-white/sky-blue styles, and seven-second pickup flow are preserved.
+and Vendi's ElevenLabs voice. The seven-product catalog follows the supplied JSON
+list, with matching SVG illustrations, the existing white/sky-blue styles, and
+the seven-second pickup flow.
 
 ## Run the web app
 
@@ -34,13 +35,26 @@ It deliberately has no authentication; run it in a trusted demo environment.
 
 Open `/dashboard`, type exact whole-number quantities in **Inventory**, and select
 **Save Inventory**. Zero means sold out. Every saved change updates open shops via
-the existing event stream (polling remains the fallback). Reloading shows saved
+the existing event stream. Pages also poll every second for direct JSON edits. Reloading shows saved
 quantities. Changes to an item during its active pickup are rejected. Concurrent
 edits include the original quantity so a sale cannot be accidentally overwritten;
 use **Reload saved quantities** if the form reports a conflict.
 
-The existing catalog is Coca-Cola, Coke Zero, Sprite, Water, and Chips. All products
-cost **$1.00 CAD** (100 cents). Each completed demo purchase adds $1.00 to revenue;
+The active catalog matches the supplied inventory, totaling **16 items**:
+
+| Product | Starting quantity |
+| --- | ---: |
+| Rice Krispies Treats Original | 3 |
+| KitKat | 3 |
+| Hello Panda Chocolate | 2 |
+| Kirkland Soft & Chewy Granola Bar | 4 |
+| Biscoff Cookies | 2 |
+| Smarties | 1 |
+| Brookside Acai & Blueberry Dark Chocolate | 1 |
+
+All products cost **$1.00 CAD** (100 cents). The supplied `quantity` values are
+stored in each product's `inventory` field; the total is calculated from current
+stock. Each completed demo purchase adds $1.00 to revenue;
 no card is charged. Existing purchase records retain their original amounts.
 
 1. A customer opens `/shop`; a visit is recorded once per tab session.
@@ -61,28 +75,42 @@ stock. Order IDs, original request fields, and completed orders persist, so
 retries cannot reopen or decrement twice, including after a server restart.
 
 **Recent Purchases** contains actual completed events, newest first, with product,
-price, time, and order ID. It shows five by default and up to twenty when expanded;
+price, time, and order ID. It shows ten by default and up to twenty when expanded;
 all records remain in storage for metrics. A fresh installation has zero fake
 purchases and zero scans.
 
 ## Persistence and analytics
 
-The replaceable `StateStorage` interface and `JsonStateStorage` implementation use
-**`data/state.json`** by default. Override with `VENDIGO_DATA_FILE`. The single JSON
-file holds the catalog, inventory, purchases (`state.transactions`), orders,
-visit identifiers, and analytics. Keep it when restarting or rebuilding.
-It is ignored by Git. Back it up when the app is stopped.
+The replaceable `StateStorage` interface coordinates `InventoryStore`,
+`PurchaseStore`, and `AnalyticsStore`. On first use it creates:
 
-Writes use a uniquely named temporary file, flush it to disk, then atomically
-rename it over the state file. Purchases and stock are written in the same commit.
-Failed writes roll memory back and do not broadcast phantom sales. Corrupt state
-fails visibly instead of silently resetting inventory or purchase history.
+```text
+data/
+  inventory.json   # authoritative catalog, dollar prices, and stock
+  purchases.json   # completed purchase records and durable order IDs/status
+  analytics.json   # visit IDs/count and existing runtime metadata
+```
+
+Override the directory with `VENDIGO_DATA_DIR`. Keep these files when restarting
+or rebuilding; they are ignored by Git. An existing `state.json` is imported once
+and preserved as `state.json.bak`, without losing stock, purchases or scans.
+The optional legacy `VENDIGO_DATA_FILE` only identifies that import source.
+
+Every file write uses a unique temporary file, `fsync`, and atomic rename. A small
+`.pending-transaction.json` recovery journal commits related changes together;
+an interrupted replacement is replayed before the next read. A durable purchase
+cannot become detached from its stock decrement. Writes that fail before the
+commit roll memory back. Corrupt JSON fails visibly instead of resetting data.
 
 Use **one long-lived Node process** with a writable local disk. This is intentionally
-not a multi-instance/serverless data store. Do not hand-edit the file while the
-server runs. If changing catalog names/prices/enabled flags manually, stop the
-server, edit `state.products` (prices are integer `priceCents`), and restart.
-Normal quantity edits use the dashboard and need no restart.
+not a multi-instance/serverless data store. Dashboard edits are the easiest way
+to manage stock. You can also edit `products[].inventory`, `price` (dollars, up to
+two decimals), or `enabled` directly in **`data/inventory.json`** while the server
+runs. The next API/voice query reads the saved file; open pages update within
+about one second. No startup inventory cache or restart is involved. Save complete,
+valid JSON, and avoid simultaneous manual file edits and checkout writes; use the
+dashboard when customers are buying. See the [report](docs/demo-changes.md) for
+the exact document structures. Back up all three files together while stopped.
 
 The browser stores a stable session ID and a successful visit marker in
 `sessionStorage`. It retries failed visit registration. The server also persists
@@ -130,8 +158,10 @@ fetches `/api/state` from `VENDIGO_APP_URL` (default `http://127.0.0.1:3000`);
 Simple stock/price questions render validated current facts directly; GPT receives
 fresh structured context before more complex replies, and stock/price intents
 are rendered from that context rather than trusting model-written facts.
-Exact remaining quantities, sold-out items, and catalog prices are all shared
-with shop/admin. Failure to fetch produces “I'm having trouble checking stock
+The API itself rereads `InventoryStore` for each query. Exact remaining quantities,
+sold-out items, and catalog prices are all shared
+with shop/admin. Conversation history resolves “it,” “they,” and “how many are
+left now,” while fresh data supplies the facts. Failure to fetch produces “I'm having trouble checking stock
 right now” instead of stale or guessed stock.
 
 The optional legacy `npm run voice` Speech Engine also reads fresh inventory on
@@ -170,16 +200,18 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Browser tests use isolated temporary JSON files and ports **3100/3120**, not your
+Browser tests use isolated temporary JSON directories and ports **3100/3120**, not your
 demo inventory. The restart test uses `.venv-vendi/bin/python`; set
 `VENDIGO_TEST_PYTHON` to another Python with `vendi/requirements.txt` installed if
 needed. Screenshots/traces go to ignored `test-results/`.
 
 Coverage includes manual edits, invalid quantities, sold-out/disabled products,
 concurrent shoppers, duplicate orders, revenue/conversion, corrupt/failed storage,
-restarting mid-pickup, and actual backend process restarts with Coke 5 → 5 → 4 → 4
+restarting mid-pickup, and actual backend process restarts with stock 5 → 5 → 4 → 4
 and seven persisted visits. Browser tests exercise mobile checkout, reload recovery,
 live Recent Purchases/metrics, inventory edits, QR, and absent admin/camera/robot UI.
+One running voice session follows Rice Krispies 3 → purchase 2 → admin 9, then direct file
+edits to quantity, price and sold-out status, plus recovery from invalid JSON.
 Voice tests verify fresh admin/purchase changes, exact quantities/prices, sold-out
 answers, unavailable storage, model runtime context, STT/TTS contracts, wake words,
 conversation history, and the seven-second guide.

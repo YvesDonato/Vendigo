@@ -18,6 +18,6 @@ export default defineConfig({
   webServer: {
     command: "npm run start -- --hostname 127.0.0.1 --port 3100",
     url: "http://127.0.0.1:3100/api/state", reuseExistingServer: false, timeout: 60_000,
-    env: { CAMERA_STREAM_URL: "", LID_API_URL: "", LID_API_ONLY: "", VENDIGO_DATA_FILE: join(mkdtempSync(join(tmpdir(), "vendigo-e2e-")), "state.json") },
+    env: { CAMERA_STREAM_URL: "", LID_API_URL: "", LID_API_ONLY: "", VENDIGO_DATA_DIR: mkdtempSync(join(tmpdir(), "vendigo-e2e-")) },
   },
 });

@@ -51,6 +51,8 @@ export interface Order {
   id: string;
   robotId: string;
   productId: string | null;
+  productName?: string;
+  amountCents?: number;
   compartmentId: number;
   sessionId: string;
   locationId: string;
@@ -61,6 +63,7 @@ export interface Order {
 }
 
 export interface AppSnapshot {
+  serverInstanceId?: string;
   revision: number;
   startedAt: string;
   robots: Robot[];

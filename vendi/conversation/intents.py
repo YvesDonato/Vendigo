@@ -31,9 +31,15 @@ def is_ending(text):
     return " ".join(normalize(text).split()) in ENDINGS
 
 
+def product_text(text):
+    # Catalog labels can use '&' while spoken questions use 'and'. Normalize
+    # both identically without changing speech consent or wake-word handling.
+    return " ".join(normalize(text.replace("&", " and ")).split())
+
+
 def deterministic_intent(text, context=None):
     """Only unambiguous shop requests bypass GPT; keywords alone are not intents."""
-    normalized = " ".join(normalize(text).split())
+    normalized = product_text(text)
     if is_ending(text):
         return Intent.END_CONVERSATION
     if normalized in {"menu", "show menu", "show me the menu", "can i see the menu"}:
@@ -42,8 +48,8 @@ def deterministic_intent(text, context=None):
         return Intent.START_PURCHASE
     products = {"snack", "snacks", "drink", "drinks", "chips", "candy", "soda", "water", "this", "that", "it"}
     if context is not None:
-        products.update(normalize(item.name) for item in context.inventory)
-        products.update(normalize(item.id) for item in context.inventory)
+        products.update(product_text(item.name) for item in context.inventory)
+        products.update(product_text(item.id) for item in context.inventory)
     products.update(name + "s" for name in list(products) if not name.endswith("s"))
     product = r"(?:(?:the|a|your|these|those) )?(?:" + "|".join(re.escape(name) for name in sorted(products)) + r")"
     if re.fullmatch(r"(?:price|prices|how much|how much is (?:it|this|that)|"
@@ -52,7 +58,7 @@ def deterministic_intent(text, context=None):
         return Intent.CHECK_PRICE
     if re.fullmatch(r"(?:inventory|what do you have|what (?:snacks|drinks) (?:do you have|are available)|"
                     r"(?:is|are) " + product + r" (?:in stock|available|sold out)|"
-                    r"do you have " + product + r"|how many " + product + r" (?:(?:are )?left|do you have))", normalized):
+                    r"do you have " + product + r"|how many " + product + r" (?:(?:are )?left|do you have))(?: now)?", normalized):
         return Intent.CHECK_INVENTORY
     return None
 
@@ -77,8 +83,8 @@ def is_hardware_request(text):
 
 
 def match_product(text, context):
-    text = normalize(text)
-    matches = [(item.id, max((len(label) for label in (normalize(item.name), normalize(item.id))
+    text = product_text(text)
+    matches = [(item.id, max((len(label) for label in (product_text(item.name), product_text(item.id))
                              if re.search(r"\b" + re.escape(label) + r"s?\b", text)), default=0))
                for item in context.inventory]
     longest = max((size for _, size in matches), default=0)

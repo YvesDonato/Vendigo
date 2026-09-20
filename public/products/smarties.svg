@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="300" viewBox="0 0 240 300">
+  <defs><linearGradient id="box"><stop stop-color="#257bb7"/><stop offset=".5" stop-color="#6bb9df"/><stop offset="1" stop-color="#388cc3"/></linearGradient></defs>
+  <g transform="rotate(-7 120 150)">
+    <path d="M54 83H180L189 94V222H54Z" fill="url(#box)"/><path d="M180 84V221M55 94H188" stroke="#2369a0" opacity=".5"/>
+    <ellipse cx="121" cy="137" rx="59" ry="35" fill="#fffaf0" transform="rotate(-8 121 137)"/>
+    <text x="121" y="147" text-anchor="middle" font-family="Arial,sans-serif" fill="#307bae" font-size="28" font-weight="bold" font-style="italic">Smarties</text>
+    <g stroke-width="2"><ellipse cx="79" cy="185" rx="13" ry="10" fill="#e9c842" stroke="#d4b033"/><ellipse cx="108" cy="196" rx="13" ry="10" fill="#e98a3d" stroke="#c96a30"/><ellipse cx="139" cy="183" rx="13" ry="10" fill="#d95e78" stroke="#b54a60"/><ellipse cx="165" cy="200" rx="12" ry="10" fill="#76a965" stroke="#57894c"/><ellipse cx="83" cy="211" rx="10" ry="7" fill="#8b659d" stroke="#765484"/></g>
+  </g>
+</svg>

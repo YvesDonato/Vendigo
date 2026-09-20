@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="300" viewBox="0 0 240 300">
+  <defs><linearGradient id="wrap"><stop stop-color="#a42b29"/><stop offset=".5" stop-color="#dc5546"/><stop offset="1" stop-color="#b9362e"/></linearGradient></defs>
+  <g transform="rotate(-8 120 150)">
+    <path d="M64 64L72 59L80 64L88 59H155L163 64L171 59L179 64V246L171 251L163 246L155 251H88L80 246L72 251L64 246Z" fill="url(#wrap)"/>
+    <path d="M70 72H173M70 239H173M74 80V232" stroke="#f49b85" opacity=".45"/>
+    <text x="121" y="109" text-anchor="middle" font-family="Georgia,serif" fill="#fff9e9" font-size="17" font-style="italic">Lotus</text>
+    <text x="121" y="140" text-anchor="middle" font-family="Georgia,serif" fill="#fff9e9" font-size="29" font-weight="bold" font-style="italic">Biscoff</text>
+    <rect x="89" y="164" width="65" height="57" rx="10" fill="#bd8249" stroke="#9b602f" stroke-width="2"/>
+    <rect x="95" y="170" width="53" height="45" rx="7" fill="none" stroke="#d69c61" stroke-width="2"/>
+    <text x="121" y="197" text-anchor="middle" font-family="Georgia,serif" fill="#8f552b" font-size="13" font-style="italic">Biscoff</text>
+  </g>
+</svg>

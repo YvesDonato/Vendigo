@@ -24,9 +24,9 @@ export function Kpis({ state }: { state: AppSnapshot }) {
 
 export function RevenueChart({ state }: { state: AppSnapshot }) {
   const total = state.transactions.reduce((sum, t) => sum + t.amountCents, 0);
-  const top = Math.max(200, Math.ceil(total / 100 / 50) * 50);
-  const start = new Date(state.startedAt).getTime() - 5 * 60 * 60 * 1000;
-  const end = state.transactions.reduce((latest, t) => Math.max(latest, new Date(t.createdAt).getTime()), new Date(state.startedAt).getTime());
+  const top = Math.max(3, Math.ceil(total / 100 / 3) * 3);
+  const start = state.transactions.reduce((earliest, t) => Math.min(earliest, new Date(t.createdAt).getTime()), new Date(state.startedAt).getTime());
+  const end = state.transactions.reduce((latest, t) => Math.max(latest, new Date(t.createdAt).getTime()), start + 1);
   const points = Array.from({ length: 7 }, (_, i) => {
     const cutoff = start + (end - start) * i / 6;
     const amount = state.transactions.filter((t) => new Date(t.createdAt).getTime() <= cutoff).reduce((sum, t) => sum + t.amountCents, 0);
@@ -38,7 +38,7 @@ export function RevenueChart({ state }: { state: AppSnapshot }) {
     <section className="panel revenue-panel">
       <div className="panel-heading"><h2>Revenue over time</h2><span className="panel-detail">CAD</span></div>
       <div className="chart-summary"><strong>{money(total)}</strong></div>
-      <div className="revenue-chart">
+      {state.transactions.length === 0 ? <p className="empty-purchases">Revenue appears here after your first purchase.</p> : <div className="revenue-chart">
         <svg viewBox="0 0 600 204" role="img" aria-label={`Cumulative event revenue: ${money(total)}`}>
           {[0, 1, 2, 3].map((i) => (
             <g key={i}>
@@ -51,7 +51,7 @@ export function RevenueChart({ state }: { state: AppSnapshot }) {
           <circle cx={points[6].x} cy={points[6].y} r="4" fill="#1786c3" />
           {points.filter((_, i) => i % 2 === 0).map((p) => <text key={p.x} x={p.x} y="193" textAnchor="middle" className="chart-label">{time(new Date(p.at).toISOString())}</text>)}
         </svg>
-      </div>
+      </div>}
     </section>
   );
 }

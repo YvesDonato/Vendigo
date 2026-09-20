@@ -83,3 +83,23 @@ class LiveInventoryTests(unittest.IsolatedAsyncioTestCase):
         for prose in ("Coca-Cola has 999 left.", "There are 999 Cokes left.", "Three Cokes remaining."):
             reply = validate_reply({"reply": prose, "topic": "social", "intent": None, "product_id": "coke"}, context, "Please check the Coke supply.")
             self.assertIn("4 left", reply.text)
+
+    async def test_plural_followups_keep_reference_but_refresh_quantity_and_price(self):
+        self.assertIn("2 left", (await self.agent.respond("Do you have chips?")).text)
+        self.data["products"][2]["priceCents"] = 125
+        self.assertIn("1.25 CAD", (await self.agent.respond("How much are they?")).text)
+        self.data["inventory"][2]["stock"] = 1
+        self.assertIn("1 left", (await self.agent.respond("How many are left now?")).text)
+        self.data["inventory"][2]["stock"] = 0
+        self.assertIn("sold out", (await self.agent.respond("Do you have them?")).text)
+        self.gpt.responses.create.assert_not_called()
+
+    async def test_ampersands_and_spoken_and_resolve_to_the_same_live_product(self):
+        for id, name, stock in [("kirkland-granola-bar", "Kirkland Soft & Chewy Granola Bar", 4),
+                                ("brookside-acai-blueberry", "Brookside Acai & Blueberry Dark Chocolate", 1)]:
+            self.data["products"].append({"id": id, "name": name, "priceCents": 100})
+            self.data["inventory"].append({"robotId": "robot-001", "productId": id, "stock": stock})
+            for label in (name, name.replace("&", "and")):
+                self.assertIn(f"{stock} left", (await self.agent.respond(f"How many {label} are left?")).text)
+                self.assertIn("1.00 CAD", (await self.agent.respond("How much are they?")).text)
+        self.gpt.responses.create.assert_not_called()

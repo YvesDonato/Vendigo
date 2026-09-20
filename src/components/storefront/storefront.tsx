@@ -69,24 +69,29 @@ export function Storefront({ robotId }: { robotId: string }) {
   const robot = state.robots.find((r) => r.id === robotId);
   if (!robot) return <main className="loading-screen"><Brand /><h1>Storefront not found</h1><p>Check the QR code and try again.</p><Link className="button button-primary" href="/shop">Open storefront <ArrowRight size={17} /></Link></main>;
   const inventory = state.inventory.filter((i) => i.robotId === robotId);
+  const products = state.products.filter((p) => p.enabled !== false && inventory.some((i) => i.productId === p.id));
+  const categories = (["drinks", "snacks"] as const).filter((value) => products.some((p) => p.category === value));
+  const activeCategory = category === "all" || categories.includes(category) ? category : "all";
+  const selectedProduct = state.products.find((p) => p.id === selected?.id);
+  const selectedInventory = inventory.find((i) => i.productId === selected?.id);
   const available = robot.status === "available" && !error;
-  const unavailableReason = robot.status === "selling" ? "Pickup in progress. Please wait a moment." : robot.status === "returning" ? "Vendigo is returning to base. Purchases are paused." : robot.status === "stopped" ? "Purchases are paused by the operator." : null;
+  const unavailableReason = robot.status === "selling" ? "Pickup in progress. Please wait a moment." : !available ? "Pickups are temporarily unavailable. Please try again shortly." : null;
 
   return <div className="storefront">
     <header className="shop-header"><Brand href="/shop" /></header>
     <main>
       <section className="shop-hero">
-        <h1>Drinks & snacks.</h1>
+        <h1>{categories.includes("drinks") ? "Drinks & snacks." : "Snacks & treats."}</h1>
         <p>Pick an item. Tap to unlock.</p>
       </section>
       {error && <div className="connection-banner" role="status">Connection lost. Reconnecting to Vendigo…</div>}
       {!error && unavailableReason && !selected && <div className="connection-banner" role="status">{unavailableReason}</div>}
       <section className="shop-products" id="products" aria-label="Products">
-        <div className="product-tabs" aria-label="Product categories">{(["all", "drinks", "snacks"] as const).map((tab) => <button key={tab} aria-pressed={category === tab} className={category === tab ? "active" : ""} onClick={() => setCategory(tab)}>{tab === "all" ? "All" : tab === "drinks" ? "Drinks" : "Snacks"}</button>)}</div>
-        <div className="product-grid">{state.products.filter((p) => p.enabled !== false && inventory.some((i) => i.productId === p.id) && (category === "all" || p.category === category)).map((product) => {
+        {categories.length > 1 && <div className="product-tabs" aria-label="Product categories">{(["all", ...categories] as const).map((tab) => <button key={tab} aria-pressed={activeCategory === tab} className={activeCategory === tab ? "active" : ""} onClick={() => setCategory(tab)}>{tab === "all" ? "All" : tab === "drinks" ? "Drinks" : "Snacks"}</button>)}</div>}
+        <div className="product-grid">{products.filter((p) => activeCategory === "all" || p.category === activeCategory).map((product) => {
           const item = inventory.find((i) => i.productId === product.id)!;
           return <article className="product-card" key={product.id} data-testid={`product-${product.id}`}>
-            <div className="product-image"><Image src={product.image} alt={`${product.name} product illustration`} width={240} height={300} priority={product.id === "coke"} /></div>
+            <div className="product-image"><Image src={product.image} alt={`${product.name} product illustration`} width={240} height={300} priority={product.id === products[0]?.id} /></div>
             <div className="product-details">
               <h2>{product.name}</h2>
               <div className="product-meta"><strong>{priceLabel(product.priceCents)}</strong><span className={item.stock <= 4 ? "text-amber" : ""}>{item.stock === 0 ? "Sold out" : `${item.stock} left`}</span></div>
@@ -98,6 +103,6 @@ export function Storefront({ robotId }: { robotId: string }) {
     </main>
     <footer className="shop-footer">A little break, brought to you by Vendi.</footer>
     {notice && <div className="toast" role="status"><Check size={18} /> {notice}</div>}
-    {selected && <Purchase product={selected} inventory={inventory.find((i) => i.productId === selected.id)!} getSessionId={() => sessionId.current} initialOrder={restored} onClose={() => { setSelected(null); setRestored(undefined); }} onComplete={completed} />}
+    {selectedProduct && selectedInventory && <Purchase product={selectedProduct} inventory={selectedInventory} getSessionId={() => sessionId.current} initialOrder={restored} onClose={() => { setSelected(null); setRestored(undefined); }} onComplete={completed} />}
   </div>;
 }

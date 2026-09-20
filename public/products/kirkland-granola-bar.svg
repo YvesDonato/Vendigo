@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="300" viewBox="0 0 240 300">
+  <defs><linearGradient id="wrap"><stop stop-color="#334a63"/><stop offset=".45" stop-color="#66809a"/><stop offset="1" stop-color="#3c536a"/></linearGradient></defs>
+  <g transform="rotate(-10 120 150)">
+    <path d="M73 48L80 44L87 48L94 44H148L155 48L162 44L168 48V252L161 256L154 252L147 256H94L87 252L80 256L73 252Z" fill="url(#wrap)"/>
+    <path d="M79 59H162M79 244H162M82 68V235" stroke="#a7bccd" opacity=".5"/>
+    <rect x="81" y="77" width="79" height="40" rx="3" fill="#25282b"/>
+    <text x="120" y="94" text-anchor="middle" font-family="Arial,sans-serif" fill="white" font-size="13" font-weight="bold">KIRKLAND</text>
+    <text x="120" y="109" text-anchor="middle" font-family="Georgia,serif" fill="#e9756b" font-size="11" font-style="italic">Signature</text>
+    <text x="120" y="140" text-anchor="middle" font-family="Arial,sans-serif" fill="#fff5da" font-size="12" font-weight="bold">Soft &amp; Chewy</text>
+    <text x="120" y="157" text-anchor="middle" font-family="Arial,sans-serif" fill="#fff5da" font-size="10">GRANOLA BAR</text>
+    <rect x="93" y="178" width="54" height="46" rx="6" fill="#cfa665" stroke="#a17b43" stroke-width="2"/>
+    <g fill="#efd29a"><ellipse cx="103" cy="188" rx="6" ry="3"/><ellipse cx="123" cy="185" rx="6" ry="3"/><ellipse cx="137" cy="196" rx="6" ry="3"/><ellipse cx="110" cy="201" rx="6" ry="3"/><ellipse cx="127" cy="211" rx="6" ry="3"/><ellipse cx="102" cy="214" rx="5" ry="3"/></g>
+  </g>
+</svg>

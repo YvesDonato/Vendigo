@@ -1,11 +1,13 @@
 import type { AppSnapshot, Product } from "../types/index.ts";
 
 export const products: Product[] = [
-  { id: "coke", name: "Coca-Cola", description: "The original. Ice cold.", priceCents: 100, image: "/products/coke.svg", color: "#da433c", category: "drinks" },
-  { id: "coke-zero", name: "Coke Zero", description: "All the taste. Zero sugar.", priceCents: 100, image: "/products/coke-zero.svg", color: "#303334", category: "drinks" },
-  { id: "sprite", name: "Sprite", description: "A little lemon-lime lift.", priceCents: 100, image: "/products/sprite.svg", color: "#4c9364", category: "drinks" },
-  { id: "water", name: "Water", description: "A fresh start, bottled.", priceCents: 100, image: "/products/water.svg", color: "#70a3be", category: "drinks" },
-  { id: "chips", name: "Chips", description: "Your next crunchy break.", priceCents: 100, image: "/products/chips.svg", color: "#d6a44a", category: "snacks" },
+  { id: "rice-krispies-original", name: "Rice Krispies Treats Original", description: "An original crispy treat.", priceCents: 100, image: "/products/rice-krispies-original.svg", color: "#3389c2", category: "snacks" },
+  { id: "kitkat", name: "KitKat", description: "Take a little chocolate break.", priceCents: 100, image: "/products/kitkat.svg", color: "#d94138", category: "snacks" },
+  { id: "hello-panda-chocolate", name: "Hello Panda Chocolate", description: "A crunchy chocolate-filled snack.", priceCents: 100, image: "/products/hello-panda-chocolate.svg", color: "#e5ba62", category: "snacks" },
+  { id: "kirkland-granola-bar", name: "Kirkland Soft & Chewy Granola Bar", description: "A soft and chewy snack break.", priceCents: 100, image: "/products/kirkland-granola-bar.svg", color: "#50647b", category: "snacks" },
+  { id: "biscoff-cookies", name: "Biscoff Cookies", description: "A little caramelized cookie crunch.", priceCents: 100, image: "/products/biscoff-cookies.svg", color: "#bd3e35", category: "snacks" },
+  { id: "smarties", name: "Smarties", description: "A colourful little treat.", priceCents: 100, image: "/products/smarties.svg", color: "#489ac8", category: "snacks" },
+  { id: "brookside-acai-blueberry", name: "Brookside Acai & Blueberry Dark Chocolate", description: "Acai and blueberry with dark chocolate.", priceCents: 100, image: "/products/brookside-acai-blueberry.svg", color: "#645178", category: "snacks" },
 ];
 
 export function createSeed(): AppSnapshot {
@@ -21,7 +23,7 @@ export function createSeed(): AppSnapshot {
     startedAt: new Date(now).toISOString(),
     robots: [{ id: "robot-001", name: "Vendigo #1", status: "available", locationId: "hacking", battery: 74 }],
     products: products.map((product) => ({ ...product, enabled: true })),
-    inventory: products.map((product, i) => ({ robotId: "robot-001", productId: product.id, compartmentId: i + 1, stock: [8, 4, 7, 9, 6][i], capacity: 12 })),
+    inventory: products.map((product, i) => ({ robotId: "robot-001", productId: product.id, compartmentId: i + 1, stock: [3, 3, 2, 4, 2, 1, 1][i], capacity: 12 })),
     locations,
     transactions: [],
     activeOrders: [],

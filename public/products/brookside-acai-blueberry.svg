@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="300" viewBox="0 0 240 300">
+  <defs><linearGradient id="bag"><stop stop-color="#43364b"/><stop offset=".5" stop-color="#75617e"/><stop offset="1" stop-color="#4b3b55"/></linearGradient></defs>
+  <path d="M61 48H179L172 76L183 244L175 266H65L57 244L68 76Z" fill="url(#bag)"/>
+  <path d="M65 57H175M68 65H172M70 254H171" stroke="#a992ac" opacity=".6"/>
+  <path d="M70 88H171L175 176H65Z" fill="#f4ecdb"/>
+  <text x="120" y="115" text-anchor="middle" font-family="Georgia,serif" fill="#514358" font-size="17" letter-spacing=".5">BROOKSIDE</text>
+  <text x="120" y="139" text-anchor="middle" font-family="Arial,sans-serif" fill="#695575" font-size="10">ACAI &amp; BLUEBERRY</text>
+  <text x="120" y="157" text-anchor="middle" font-family="Arial,sans-serif" fill="#695575" font-size="9">DARK CHOCOLATE</text>
+  <circle cx="105" cy="207" r="22" fill="#654534"/><circle cx="143" cy="223" r="23" fill="#50372e"/><circle cx="96" cy="243" r="15" fill="#4d5174"/><circle cx="118" cy="250" r="12" fill="#677197"/>
+  <path d="M93 195Q106 187 117 200M132 209Q146 204 155 216" fill="none" stroke="#977258" stroke-width="3" opacity=".8"/>
+  <path d="M81 229Q79 211 95 214Q101 225 81 229" fill="#74845c"/>
+</svg>

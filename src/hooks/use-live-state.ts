@@ -10,10 +10,9 @@ export function useLiveState() {
 
   useEffect(() => {
     let active = true;
-    let healthy = false;
     const accept = (snapshot: AppSnapshot) => {
       if (!active) return;
-      setState((current) => !current || snapshot.startedAt !== current.startedAt || snapshot.revision >= current.revision ? snapshot : current);
+      setState((current) => !current || snapshot.serverInstanceId !== current.serverInstanceId || snapshot.startedAt !== current.startedAt || snapshot.revision >= current.revision ? snapshot : current);
       setError(false);
     };
     const poll = async () => {
@@ -25,17 +24,16 @@ export function useLiveState() {
     };
     const events = new EventSource("/api/events");
     events.onmessage = (event) => {
-      healthy = true;
       if (active) setConnected(true);
       accept(JSON.parse(event.data));
     };
     events.onerror = () => {
-      healthy = false;
       if (active) setConnected(false);
       void poll();
     };
     void poll();
-    const fallback = setInterval(() => { if (!healthy) void poll(); }, 3_000);
+    // Also catches direct inventory.json edits, which have no browser mutation event.
+    const fallback = setInterval(() => { void poll(); }, 1_000);
     const onVisible = () => { if (document.visibilityState === "visible") void poll(); };
     document.addEventListener("visibilitychange", onVisible);
     return () => {

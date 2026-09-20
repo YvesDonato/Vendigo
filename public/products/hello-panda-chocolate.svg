@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="300" viewBox="0 0 240 300">
+  <defs><linearGradient id="box"><stop stop-color="#e9bd58"/><stop offset=".5" stop-color="#ffe2a0"/><stop offset="1" stop-color="#e5b450"/></linearGradient></defs>
+  <path d="M67 54H171L183 76V254H56V77Z" fill="url(#box)"/>
+  <path d="M67 54L72 78H171L171 54M72 78V253" fill="none" stroke="#cf9d42" opacity=".5"/>
+  <text x="122" y="105" text-anchor="middle" font-family="Arial,sans-serif" fill="#b83e31" font-size="22" font-weight="bold">Hello</text>
+  <text x="122" y="129" text-anchor="middle" font-family="Arial,sans-serif" fill="#b83e31" font-size="25" font-weight="bold">Panda</text>
+  <circle cx="99" cy="153" r="13" fill="#393937"/><circle cx="145" cy="153" r="13" fill="#393937"/>
+  <ellipse cx="122" cy="178" rx="35" ry="32" fill="#fffaf0"/>
+  <ellipse cx="108" cy="176" rx="10" ry="13" fill="#393937" transform="rotate(22 108 176)"/><ellipse cx="137" cy="176" rx="10" ry="13" fill="#393937" transform="rotate(-22 137 176)"/>
+  <circle cx="110" cy="174" r="3" fill="white"/><circle cx="135" cy="174" r="3" fill="white"/>
+  <ellipse cx="122" cy="188" rx="5" ry="4" fill="#393937"/><path d="M114 195Q122 202 130 195" fill="none" stroke="#393937" stroke-width="2"/>
+  <rect x="57" y="219" width="125" height="35" fill="#76533a"/>
+  <text x="120" y="241" text-anchor="middle" font-family="Arial,sans-serif" fill="#fff3d4" font-size="11" letter-spacing="1">CHOCOLATE</text>
+</svg>

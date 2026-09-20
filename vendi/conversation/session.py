@@ -29,9 +29,12 @@ class ConversationContext:
         product_scope = explicit_product or self.topic in {"product", "purchase_process", "payment_security"}
         fact_intent = None
         if product_scope and (product or self.referenced_product_name):
-            if text in {"how much", "how much is it", "how much is that", "how much does it cost", "whats the price"}:
+            if text in {"how much", "how much is it", "how much is that", "how much is that one", "how much does it cost", "whats the price",
+                        "how much are they", "how much are those", "how much are these", "how much do they cost", "and the price"}:
                 fact_intent = Intent.CHECK_PRICE
-            elif text in {"do you have that", "do you have it", "do you have that one", "is it available", "is it in stock"}:
+            elif text in {"do you have that", "do you have it", "do you have that one", "is it available", "is it in stock",
+                          "do you have them", "are they available", "are they in stock", "how many are left", "how many are left now",
+                          "how many of those are left", "how many of them are left", "how many do you have", "how many now"}:
                 fact_intent = Intent.CHECK_INVENTORY
             elif text in {"can i get one", "can i buy it", "i want that one"}:
                 fact_intent = Intent.START_PURCHASE

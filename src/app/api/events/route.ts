@@ -1,9 +1,14 @@
-import { store } from "@/lib/server/runtime";
+import { getStore } from "@/lib/server/runtime";
+import { errorResponse } from "@/lib/server/http";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export function GET(request: Request) {
+  let store;
+  let initial;
+  try { store = getStore(); initial = store.snapshot(); }
+  catch (error) { return errorResponse(error); }
   const encoder = new TextEncoder();
   let cleanup = () => {};
   const stream = new ReadableStream({
@@ -26,7 +31,7 @@ export function GET(request: Request) {
       const abort = () => { cleanup(); controller.close(); };
       request.signal.addEventListener("abort", abort, { once: true });
       if (request.signal.aborted) abort();
-      else send(store.snapshot());
+      else send(initial);
     },
     cancel() { cleanup(); },
   });

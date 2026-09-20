@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="300" viewBox="0 0 240 300">
+  <defs><linearGradient id="bag"><stop stop-color="#b94429"/><stop offset=".4" stop-color="#ef8050"/><stop offset="1" stop-color="#ca4a2e"/></linearGradient></defs>
+  <path d="M65 56L173 50L180 70L173 114L187 239L181 266L60 269L53 247L67 117L59 72Z" fill="url(#bag)"/>
+  <path d="M63 60L173 55M62 67L175 62M58 258L181 254M61 264L180 260" stroke="#a13926" opacity=".7"/>
+  <path d="M76 76L71 117L67 240" fill="none" stroke="#ffddb7" stroke-width="5" opacity=".35"/>
+  <path d="M74 161L104 87L168 147Z" fill="#343134" stroke="#f7c260" stroke-width="4" stroke-linejoin="round"/>
+  <text x="121" y="140" text-anchor="middle" fill="#fffaf0" font-family="Arial,sans-serif" font-weight="bold" font-style="italic" font-size="29">Doritos</text>
+  <text x="120" y="171" text-anchor="middle" fill="#fff1da" font-family="Arial,sans-serif" font-size="8" letter-spacing="1.4">TORTILLA CHIPS</text>
+  <path d="M79 224Q73 223 77 217L103 180Q106 175 110 181L137 222Q140 228 133 228Z" fill="#edbd58" stroke="#d69638" stroke-width="2"/>
+  <path d="M112 234Q108 232 112 227L138 193Q142 189 145 195L165 233Q168 239 162 239Z" fill="#f5ce76" stroke="#d69638" stroke-width="2"/>
+  <g fill="#bf8636" opacity=".6"><circle cx="104" cy="205" r="1.8"/><circle cx="95" cy="218" r="1.5"/><circle cx="120" cy="218" r="1.6"/><circle cx="138" cy="215" r="1.7"/><circle cx="145" cy="231" r="1.5"/></g>
+</svg>

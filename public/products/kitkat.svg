@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="300" viewBox="0 0 240 300">
+  <defs><linearGradient id="wrap"><stop stop-color="#bc302d"/><stop offset=".4" stop-color="#ed5b4e"/><stop offset="1" stop-color="#cf3832"/></linearGradient></defs>
+  <g transform="rotate(-7 120 150)">
+    <path d="M53 67L60 62L67 67L74 62H169L176 67L183 62L189 67V238L182 243L175 238L168 243H74L67 238L60 243L53 238Z" fill="url(#wrap)"/>
+    <path d="M58 73H184M58 232H184M63 81V223" stroke="#ffb7a9" opacity=".4" stroke-width="3"/>
+    <ellipse cx="121" cy="134" rx="56" ry="40" fill="#fff6e8" transform="rotate(-10 121 134)"/>
+    <text x="121" y="146" text-anchor="middle" font-family="Arial,sans-serif" font-size="35" font-weight="bold" font-style="italic" fill="#c93630">KitKat</text>
+    <g transform="rotate(12 124 196)"><rect x="86" y="182" width="73" height="17" rx="3" fill="#75452f"/><rect x="86" y="204" width="73" height="17" rx="3" fill="#835039"/><path d="M92 186H154M92 208H154" stroke="#af7653" stroke-width="2"/></g>
+  </g>
+</svg>

@@ -1,8 +1,13 @@
 import { DemoStore } from "./store";
 import { JsonStateStorage } from "./storage";
-import { resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
-const globalStore = globalThis as typeof globalThis & { hawk2uStore?: DemoStore };
-// One Node process serves all route handlers and browsers, including after HMR.
-export const store = globalStore.hawk2uStore ??= new DemoStore(undefined, undefined,
-  new JsonStateStorage(resolve(/* turbopackIgnore: true */ process.env.VENDIGO_DATA_FILE || "data/state.json")));
+const globalStore = globalThis as typeof globalThis & { vendigoJsonStore?: DemoStore };
+// Initialize only inside a request. Next's parallel build workers must never
+// create data, import legacy state, or resume a hardware pickup during a build.
+export function getStore() {
+  const directory = resolve(/* turbopackIgnore: true */ process.env.VENDIGO_DATA_DIR || (process.env.VENDIGO_DATA_FILE ? dirname(process.env.VENDIGO_DATA_FILE) : "data"));
+  const legacyPath = resolve(/* turbopackIgnore: true */ process.env.VENDIGO_DATA_FILE || join(directory, "state.json"));
+  return globalStore.vendigoJsonStore ??= new DemoStore(undefined, undefined,
+    new JsonStateStorage(directory, legacyPath));
+}

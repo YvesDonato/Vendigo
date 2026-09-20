@@ -37,14 +37,14 @@ async def check(base):
                 raise RuntimeError('Test website did not start')
             async def inventory(quantity):
                 response = await client.post('/api/inventory', json={
-                    'robotId': 'robot-001', 'items': [{'productId': 'coke', 'stock': quantity}]})
+                    'robotId': 'robot-001', 'items': [{'productId': 'rice-krispies-original', 'stock': quantity}]})
                 response.raise_for_status()
-            await inventory(4)
-            reply = await agent.respond('How many Cokes are left?')
-            assert '4 left' in reply.text, reply.text
+            await inventory(3)
+            reply = await agent.respond('How many Rice Krispies Treats Original are left?')
+            assert '3 left' in reply.text, reply.text
             print('Admin → Vendi:', reply.text, flush=True)
             response = await client.post('/api/purchases', json={
-                'orderId': 'voice-live-purchase', 'robotId': 'robot-001', 'productId': 'coke',
+                'orderId': 'voice-live-purchase', 'robotId': 'robot-001', 'productId': 'rice-krispies-original',
                 'compartmentId': 1, 'sessionId': 'live-voice-test'})
             response.raise_for_status()
             for _ in range(100):
@@ -52,22 +52,26 @@ async def check(base):
                 if state['transactions']:
                     break
                 await asyncio.sleep(0.1)
-            assert state['inventory'][0]['stock'] == 3
-            reply = await agent.respond('How many Cokes are left?')
-            assert '3 left' in reply.text, reply.text
+            assert state['inventory'][0]['stock'] == 2
+            reply = await agent.respond('How many Rice Krispies Treats Original are left?')
+            assert '2 left' in reply.text, reply.text
             print('Purchase → Vendi:', reply.text, flush=True)
             # Deliberately use a non-shortcut request so the real GPT integration runs.
-            reply = await agent.respond('Please look up the exact remaining Coca-Cola supply for me today.')
-            assert '3 left' in reply.text, reply.text
+            reply = await agent.respond('Please look up the exact remaining Rice Krispies Treats Original supply for me today.')
+            assert '2 left' in reply.text, reply.text
             print('GPT + fresh context:', reply.text, flush=True)
+            await inventory(9)
+            reply = await agent.respond('Please check the exact Rice Krispies Treats Original supply again after that restock.')
+            assert '9 left' in reply.text, reply.text
+            print('GPT + admin restock, same conversation:', reply.text, flush=True)
             reply = await agent.respond('How long do I have to collect my item after verification?')
             assert 'seven' in reply.text.lower() or '7' in reply.text, reply.text
             print('GPT dispensing knowledge:', reply.text, flush=True)
             await inventory(0)
-            reply = await agent.respond('Do you have Coke?')
+            reply = await agent.respond('Do you have Rice Krispies Treats Original?')
             assert 'sold out' in reply.text, reply.text
             print('Sold out → Vendi:', reply.text, flush=True)
-            reply = await agent.respond('How much is Coke?')
+            reply = await agent.respond('How much is Rice Krispies Treats Original?')
             assert '1.00 CAD' in reply.text, reply.text
             print('Catalog price:', reply.text, flush=True)
         sample = ROOT / 'test-results/vendi-matilda.wav'
@@ -83,7 +87,7 @@ async def check(base):
 
 def main():
     with tempfile.TemporaryDirectory(prefix='vendigo-live-') as directory:
-        env = {**os.environ, 'VENDIGO_DATA_FILE': str(Path(directory) / 'state.json'),
+        env = {**os.environ, 'VENDIGO_DATA_DIR': directory,
                'LID_API_URL': '', 'LID_API_ONLY': ''}
         with tempfile.TemporaryFile() as log:
             server = subprocess.Popen(['node', 'node_modules/next/dist/bin/next', 'start',

@@ -10,7 +10,7 @@ const hardware: RobotHardware = {
   unlockCompartment: async () => {}, lockCompartment: async () => {},
   stopRobot: async () => {}, resumeRobot: async () => {}, returnToBase: async () => {},
 };
-const input = { orderId: "test-order", robotId: "robot-001", productId: "coke", compartmentId: 1, sessionId: "test-session" };
+const input = { orderId: "test-order", robotId: "robot-001", productId: "rice-krispies-original", compartmentId: 1, sessionId: "test-session" };
 
 test("all catalog products cost one dollar and analytics start without fake events", () => {
   const store = new DemoStore(hardware);
@@ -21,7 +21,7 @@ test("all catalog products cost one dollar and analytics start without fake even
   assert.equal(snapshot.transactions.reduce((sum, t) => sum + t.amountCents, 0), 0);
   assert.equal(snapshot.qrScans, 0);
   assert.equal(snapshot.purchasingSessions, 0);
-  assert.equal(snapshot.inventory.reduce((sum, item) => sum + item.stock, 0), 34);
+  assert.equal(snapshot.inventory.reduce((sum, item) => sum + item.stock, 0), 16);
 });
 
 test("QR visits are deduplicated per robot and browser session", () => {
@@ -39,7 +39,7 @@ test("pickup relocks on the server, records one sale, and broadcasts every metri
   const unsubscribe = store.subscribe((state) => revisions.push(state.revision));
   const order = await store.purchase(input);
   assert.equal(order.status, "unlocked");
-  assert.equal(store.snapshot().inventory[0].stock, 8);
+  assert.equal(store.snapshot().inventory[0].stock, 3);
   assert.equal(store.snapshot().transactions.length, 0);
   // Relocking works without a connected customer or event-stream subscriber.
   unsubscribe();
@@ -47,7 +47,7 @@ test("pickup relocks on the server, records one sale, and broadcasts every metri
   const snapshot = store.snapshot();
   assert.equal(locks, 1);
   assert.equal(store.getOrder(order.id).status, "completed");
-  assert.equal(snapshot.inventory[0].stock, 7);
+  assert.equal(snapshot.inventory[0].stock, 2);
   assert.equal(snapshot.transactions.length, 1);
   assert.equal(snapshot.transactions[0].amountCents, 100);
   assert.equal(snapshot.transactions.reduce((sum, sale) => sum + sale.amountCents, 0), 100);
@@ -91,12 +91,12 @@ test("a purchase opens the real lid adapter and its server timer closes it witho
   await delay(75);
   assert.deepEqual(commands, ["open", "closed"]);
   assert.equal(store.getOrder(order.id).status, "completed");
-  assert.equal(store.snapshot().inventory[0].stock, 7);
+  assert.equal(store.snapshot().inventory[0].stock, 2);
   rejectClose = true;
   const failed = await store.purchase({ ...input, orderId: "close-failure" });
   await delay(75);
   assert.equal(store.getOrder(failed.id).status, "lock_failed");
-  assert.equal(store.snapshot().inventory[0].stock, 7);
+  assert.equal(store.snapshot().inventory[0].stock, 2);
   rejectClose = false;
   await store.command("robot-001", "retry-lock");
   assert.equal(store.getOrder(failed.id).status, "completed");
@@ -131,7 +131,7 @@ test("repeated requests and relock callbacks are idempotent", async (t) => {
   assert.equal(result.status, "completed");
   assert.equal(unlocks, 1);
   assert.equal(store.snapshot().transactions.length, 1);
-  await assert.rejects(store.purchase({ ...input, productId: "water" }), /already in use/);
+  await assert.rejects(store.purchase({ ...input, productId: "biscoff-cookies" }), /already in use/);
 });
 
 test("repeat purchases do not fabricate shop visits", async (t) => {
@@ -151,18 +151,18 @@ test("invalid compartments and exhausted stock are rejected", async (t) => {
   await assert.rejects(store.purchase({ ...input, compartmentId: 9 }), /do not match/);
   await assert.rejects(store.purchase({ ...input, robotId: "unknown" }), /could not be found/);
   for (let i = 0; i < 4; i++) {
-    await store.purchase({ ...input, orderId: `zero-${i}`, productId: "coke-zero", compartmentId: 2 });
+    await store.purchase({ ...input, orderId: `zero-${i}`, productId: "kirkland-granola-bar", compartmentId: 4 });
     await store.close(`zero-${i}`);
   }
-  await assert.rejects(store.purchase({ ...input, orderId: "sold-out", productId: "coke-zero", compartmentId: 2 }), /sold out/);
-  assert.equal(store.snapshot().inventory[1].stock, 0);
+  await assert.rejects(store.purchase({ ...input, orderId: "sold-out", productId: "kirkland-granola-bar", compartmentId: 4 }), /sold out/);
+  assert.equal(store.snapshot().inventory[3].stock, 0);
 });
 
 test("unlock failures release the reservation without inventory or revenue changes", async () => {
   const store = new DemoStore({ ...hardware, unlockCompartment: async () => { throw new Error("Unreachable"); } });
   const order = await store.purchase(input);
   assert.equal(order.status, "failed");
-  assert.equal(store.snapshot().inventory[0].stock, 8);
+  assert.equal(store.snapshot().inventory[0].stock, 3);
   assert.equal(store.snapshot().transactions.length, 0);
   assert.equal(store.snapshot().robots[0].status, "available");
 });
@@ -174,12 +174,12 @@ test("a failed relock stops sales and can be retried exactly once", async (t) =>
   await store.purchase(input); await store.close(input.orderId);
   assert.equal(store.getOrder(input.orderId).status, "lock_failed");
   assert.equal(store.snapshot().robots[0].status, "stopped");
-  assert.equal(store.snapshot().inventory[0].stock, 8);
+  assert.equal(store.snapshot().inventory[0].stock, 3);
   await assert.rejects(store.command("robot-001", "resume"), /relock/);
   failLock = false;
   await store.command("robot-001", "retry-lock");
   assert.equal(store.getOrder(input.orderId).status, "completed");
-  assert.equal(store.snapshot().inventory[0].stock, 7);
+  assert.equal(store.snapshot().inventory[0].stock, 2);
   assert.equal(store.snapshot().transactions.length, 1);
   assert.equal(store.snapshot().robots[0].status, "stopped");
   await store.command("robot-001", "resume");
@@ -194,7 +194,7 @@ test("manual unlocks do not record a sale or silently resume a stopped robot", a
   const order = await store.command("robot-001", "unlock", 3);
   assert.ok(order);
   await store.close(order.id);
-  assert.equal(store.snapshot().inventory[2].stock, 7);
+  assert.equal(store.snapshot().inventory[2].stock, 2);
   assert.equal(store.snapshot().transactions.length, 0);
   assert.equal(store.snapshot().robots[0].status, "stopped");
   await store.command("robot-001", "resume");

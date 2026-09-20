@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="300" viewBox="0 0 240 300">
+  <defs><linearGradient id="wrapper"><stop stop-color="#c3a36b"/><stop offset=".4" stop-color="#f1ddad"/><stop offset="1" stop-color="#c9ad78"/></linearGradient><linearGradient id="oats" x2="0" y2="1"><stop stop-color="#e8bc75"/><stop offset="1" stop-color="#bc8844"/></linearGradient></defs>
+  <g transform="rotate(-12 120 150)">
+    <path d="M76 50L83 46L90 50L97 46L104 50L111 46L118 50L125 46L132 50L139 46L146 50L153 46L160 50L160 253L153 257L146 253L139 257L132 253L125 257L118 253L111 257L104 253L97 257L90 253L83 257L76 253Z" fill="url(#wrapper)"/>
+    <path d="M78 59H158M78 65H158M78 242H158M78 248H158" stroke="#b79459" opacity=".65"/>
+    <path d="M86 73V231" stroke="#fff6db" stroke-width="4" opacity=".5"/>
+    <rect x="84" y="101" width="68" height="69" rx="6" fill="#f9f5e5"/>
+    <path d="M107 114Q115 104 126 112Q122 120 112 120" fill="#6c8d5a"/>
+    <text x="118" y="136" text-anchor="middle" fill="#41644a" font-family="Georgia,serif" font-weight="bold" font-size="17">Granola</text>
+    <text x="118" y="155" text-anchor="middle" fill="#41644a" font-family="Arial,sans-serif" font-size="11" letter-spacing="3">BAR</text>
+    <rect x="94" y="183" width="49" height="37" rx="8" fill="url(#oats)" stroke="#a9783b" stroke-width="1.5"/>
+    <g fill="#f3d79d" stroke="#c69b5b" stroke-width=".7"><ellipse cx="103" cy="192" rx="6" ry="3" transform="rotate(-25 103 192)"/><ellipse cx="117" cy="188" rx="6" ry="3"/><ellipse cx="132" cy="194" rx="6" ry="3" transform="rotate(30 132 194)"/><ellipse cx="112" cy="200" rx="6" ry="3" transform="rotate(20 112 200)"/><ellipse cx="127" cy="203" rx="6" ry="3" transform="rotate(-30 127 203)"/><ellipse cx="103" cy="211" rx="6" ry="3"/><ellipse cx="118" cy="213" rx="6" ry="3" transform="rotate(-25 118 213)"/><ellipse cx="134" cy="211" rx="5" ry="3" transform="rotate(20 134 211)"/></g>
+  </g>
+</svg>
