@@ -305,11 +305,25 @@ CONVERSATION_TIMEOUT=300 .venv-vendi/bin/python -m vendi.voice_demo --live --com
 
 Ask “How do I buy something?”, “And then?”, “Then what?”, “If I scan the QR code
 does it open?”, “Why?”, and “How long does it stay open?”. To test real product
-references, run the web app first. Live mode fetches `VENDIGO_APP_URL`
-(default `http://127.0.0.1:3000`) on every turn; `--app-url` overrides this.
-Inventory and prices come from `data/inventory.json` through the web app's
-`InventoryStore`, reread on each request. Admin saves, completed purchases, and
-direct file edits appear in the next spoken answer without a restart. Conversation
+references, connect to the deployed web app or run it locally. Live mode fetches
+`VENDIGO_APP_URL` (default `http://127.0.0.1:3000`) on every turn; `--app-url`
+overrides this. For the live Vercel Blob inventory, save the public website origin
+in `.env.local` and restart the voice process:
+
+```dotenv
+VENDIGO_APP_URL=https://vendigo-beryl.vercel.app
+```
+
+Use the website address shown under **Domains** in Vercel, rather than the
+`vercel.com` project management link. The voice agent reads `/api/state`; the
+deployed app accesses the private Blob store with its server-side credentials.
+The voice process does not need `BLOB_READ_WRITE_TOKEN` or a local web server.
+Both Python Vendi and `npm run voice` use this setting.
+
+Inventory and prices come from the configured web app's store, reread on each
+request: private Vercel Blob when hosted, or `data/inventory.json` in local JSON
+mode. Admin saves and completed purchases appear in the next spoken answer
+without a restart. Conversation
 history resolves references such as “How much are they?” and “How many are left
 now?”; current quantities and prices always come from the fresh response. An
 unreadable store produces “I'm having trouble checking stock right now” instead
