@@ -14,7 +14,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/backend.test.ts tests/lid-api.test.ts",
+    "test": "node --experimental-strip-types --test tests/backend.test.ts tests/storage.test.ts tests/lid-api.test.ts",
     "test:e2e": "playwright test",
     "voice": "node voice-server/server.mts"
   },

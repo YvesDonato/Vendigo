@@ -1,19 +1,20 @@
 import fs from "node:fs";
 import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 
-process.loadEnvFile("/home/admin/auto-dash/.env.local");
+for (const filename of [".env.local", ".env"]) {
+    try { process.loadEnvFile(filename); }
+    catch (error) { if (error.code !== "ENOENT") throw error; }
+}
 
 const client = new ElevenLabsClient({
     apiKey: process.env.ELEVENLABS_API_KEY
 });
 
-// Laura, with a friendly, conversational sales delivery.
-const VOICE_ID = "FGY2WhTYpPnrIDTdsKH5";
+// Same environment-selected voice as Vendi's live TTS.
+const VOICE_ID = process.env.ELEVENLABS_VOICE_ID;
+if (!VOICE_ID) throw new Error("Set ELEVENLABS_VOICE_ID before generating clips.");
 const OUTPUT_DIR = "/home/admin/food_robot/audio/voice";
 const voice = await client.voices.get(VOICE_ID);
-if (!/laura/i.test(voice.name ?? "")) {
-    throw new Error(`Expected Laura, received ${voice.name}. No clips were changed.`);
-}
 console.log(`Using voice: ${voice.name}`);
 
 const phrases = {

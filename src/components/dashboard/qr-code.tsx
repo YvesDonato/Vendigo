@@ -14,7 +14,7 @@ export function RobotQr({ robotId, onClose }: { robotId: string; onClose: () => 
 
   useEffect(() => {
     const origin = process.env.NEXT_PUBLIC_SHOP_ORIGIN || window.location.origin;
-    const link = `${origin.replace(/\/$/, "")}/shop/${robotId}`;
+    const link = `${origin.replace(/\/$/, "")}${robotId === "robot-001" ? "/shop" : `/shop/${robotId}`}`;
     QRCode.toDataURL(link, { width: 600, margin: 3, color: { dark: "#193e59", light: "#ffffff" }, errorCorrectionLevel: "M" }).then((data) => { setImage(data); setUrl(link); }).catch(() => setError("Couldn’t generate the QR code. Please reopen this panel."));
   }, [robotId]);
 
@@ -24,7 +24,7 @@ export function RobotQr({ robotId, onClose }: { robotId: string; onClose: () => 
   }
 
   return <Modal title="Storefront QR code" onClose={onClose} className="qr-modal">
-    <h2>Robot QR</h2><p>Scan to open the storefront.</p>
+    <h2>Shop QR</h2><p>Scan to open the storefront.</p>
     {image ? <img className="qr-image" src={image} alt={`QR code for ${url}`} width={240} height={240} /> : <div className="qr-loading">Preparing your QR code…</div>}
     <a className="qr-url" href={url} target="_blank" rel="noreferrer">Open storefront <ArrowUpRight size={13} /></a>
     {(url.includes("localhost") || url.includes("127.0.0.1")) && <p className="qr-lan-note">For phone scans, open this dashboard using your computer’s Wi-Fi IP address.</p>}

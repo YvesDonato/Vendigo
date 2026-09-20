@@ -14,10 +14,11 @@ for (const filename of [".env.local", ".env"]) {
 
 const apiKey = process.env.ELEVENLABS_API_KEY;
 const engineId = process.env.ELEVENLABS_SPEECH_ENGINE_ID;
+const voiceId = process.env.ELEVENLABS_VOICE_ID;
 const port = Number(process.env.VOICE_SERVER_PORT ?? 3001);
 
-if (!apiKey || !engineId) {
-  throw new Error("ELEVENLABS_API_KEY and ELEVENLABS_SPEECH_ENGINE_ID are required.");
+if (!apiKey || !engineId || !voiceId) {
+  throw new Error("ELEVENLABS_API_KEY, ELEVENLABS_SPEECH_ENGINE_ID and ELEVENLABS_VOICE_ID are required.");
 }
 
 if (!Number.isInteger(port) || port < 1 || port > 65_535) {
@@ -120,6 +121,8 @@ const httpServer = createServer(async (request, response) => {
 });
 
 const elevenlabs = new ElevenLabsClient({ apiKey });
+// The preserved Speech Engine uses the same configured voice as Python TTS.
+await elevenlabs.speechEngine.update(engineId, { tts: { voiceId } });
 const engine = await elevenlabs.speechEngine.get(engineId);
 
 const attachment = engine.attach(httpServer, "/ws", {

@@ -49,7 +49,7 @@ export function Purchase({ product, inventory, getSessionId, initialOrder, onClo
     setPhase("opening");
     saveSession(storageKey, JSON.stringify({ orderId: orderId.current, productId: product.id }));
     try {
-      const result = await api<Order>("/api/robot/unlock", { robotId: inventory.robotId, productId: product.id, compartmentId: inventory.compartmentId, orderId: orderId.current, sessionId: getSessionId() });
+      const result = await api<Order>("/api/purchases", { robotId: inventory.robotId, productId: product.id, compartmentId: inventory.compartmentId, orderId: orderId.current, sessionId: getSessionId() });
       setOrder(result);
       setPhase("tracking");
     } catch (reason) {
@@ -76,7 +76,7 @@ export function Purchase({ product, inventory, getSessionId, initialOrder, onClo
       <div className="confirmation-image"><Image src={product.image} alt={product.name} width={150} height={185} /></div>
       <h2>{product.name}</h2>
       <div className="order-total"><span>1 × {product.name}</span><strong>{priceLabel(product.priceCents)}</strong></div>
-      <button className="button button-primary button-full" onClick={confirm}>Confirm <ArrowRight size={18} /></button>
+      <button className="button button-primary button-full" onClick={confirm} disabled={inventory.stock < 1}>Confirm <ArrowRight size={18} /></button>
     </>}
     {phase === "opening" && <div className="purchase-state" role="status"><span className="state-icon"><UnlockKeyhole size={34} /></span><h2>Opening your compartment…</h2><LoaderCircle className="spin" size={25} /></div>}
     {phase === "tracking" && <div className="purchase-state" role="status">

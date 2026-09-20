@@ -1,169 +1,161 @@
 # Vendigo
 
-**Commerce that comes to you.**
+**Commerce that comes to you.** A mobile customer shop, a live retail dashboard,
+and Vendi's ElevenLabs voice. The existing five products, local SVG illustrations,
+white/sky-blue styles, and seven-second pickup flow are preserved.
 
-Vendigo is an autonomous mobile storefront for crowded events. A small robot brings cold drinks and snacks to the crowd. Customers scan its QR code, pick one free item, confirm, and collect it from an unlocked compartment. Operators see inventory, pickup activity, robot controls, and an onboard camera in one live dashboard. The mobile-first interface uses white and sky blue without shadows, decorative badges, location labels, or fleet numbers.
+## Run the web app
 
-## Run locally
-
-Requires Node.js **22.18+** and npm.
+Requires Node.js **22.18+** and npm. Run from the repository root:
 
 ```bash
 npm ci
 npm run dev
 ```
 
-No accounts, API keys, payment provider, or database are required. Optional configuration is documented in [.env.example](.env.example); put your values in `.env.local`.
+- Customer: **http://localhost:3000/shop** (`/` redirects here).
+- Admin: **http://localhost:3000/dashboard**.
+- Existing QR links at `/shop/robot-001` still work.
 
-- Customer storefront: **http://localhost:3000/shop/robot-001**
-- Operator dashboard: **http://localhost:3000/dashboard**
-- `/` opens the default robot’s storefront.
-
-For a production demo:
+Production demo:
 
 ```bash
 npm run build
 npm start
 ```
 
-### Scanning from a phone
+No database, payment provider, or account setup is needed for the web demo.
+Keep existing secrets in `.env.local`; `.env.example` documents optional settings.
+The shop has no admin link, camera, robot controls, settings, or admin metrics.
+The internal dashboard has inventory, purchases, revenue, conversion, and Shop QR.
+It deliberately has no authentication; run it in a trusted demo environment.
 
-Run the app on a computer connected to the same reachable Wi-Fi network as the phone. Open the dashboard using the computer’s LAN address, such as `http://192.168.1.42:3000/dashboard`, and select **Robot QR**. Download the PNG and attach it to the robot. The QR points to the same origin at `/shop/robot-001`.
+## Inventory and purchases
 
-Alternatively, set `NEXT_PUBLIC_SHOP_ORIGIN=http://192.168.1.42:3000` before starting development or **before building** production. A QR containing `localhost` only works on the computer itself. The QR dialog calls this out. All fonts, icons, and product illustrations are bundled locally.
+Open `/dashboard`, type exact whole-number quantities in **Inventory**, and select
+**Save Inventory**. Zero means sold out. Every saved change updates open shops via
+the existing event stream (polling remains the fallback). Reloading shows saved
+quantities. Changes to an item during its active pickup are rejected. Concurrent
+edits include the original quantity so a sale cannot be accidentally overwritten;
+use **Reload saved quantities** if the form reports a conflict.
 
-## The demo
+The existing catalog is Coca-Cola, Coke Zero, Sprite, Water, and Chips. All products
+cost **$1.00 CAD** (100 cents). Each completed demo purchase adds $1.00 to revenue;
+no card is charged. Existing purchase records retain their original amounts.
 
-1. Keep `/dashboard` open on a laptop.
-2. Scan the QR with a phone, or open `/shop/robot-001` in another browser.
-3. Choose **Coca-Cola → Get Item → Confirm**.
-4. All items are **Free**. Confirmation goes straight to unlocking, with no payment step.
-5. The server acknowledges the unlock; the customer sees **Compartment unlocked**, **Take your Coca-Cola**, and a seven-second countdown.
-6. After seven seconds, the **server** relocks the compartment, deducts one unit, and records the sale.
-7. Units sold, conversion, inventory, and recent sales update in all open dashboards without refreshing. Free pickups record zero-value transactions, so revenue stays at $0.00.
+1. A customer opens `/shop`; a visit is recorded once per tab session.
+2. Choose an available product → **Get Item** → **Confirm**.
+3. The server checks the product, compartment, and inventory, then verifies the
+   existing unlock acknowledgement. It reserves the pickup while it is active.
+4. The customer sees a seven-second collection countdown. The server closes the
+   compartment even if the customer reloads or closes the browser.
+5. After the close acknowledgement, **`completePurchase`** atomically commits the
+   purchase record, one-unit decrement, completed order, and analytics state.
+6. Recent Purchases, metrics, inventory, and open shops update together. Vendi's
+   next question reads the updated state immediately.
 
-Closing or refreshing the customer’s tab does not cancel the relock timer. Refreshing during a pickup restores the active order. A repeated request reuses the order ID and cannot record a second sale. Only one compartment per robot can be active at a time.
+`POST /api/purchases` is the customer purchase route. The preserved
+`/api/robot/unlock` compatibility route calls the same handler/store function.
+`GET /api/orders/[orderId]` only reads status; success-page refreshes never mutate
+stock. Order IDs, original request fields, and completed orders persist, so
+retries cannot reopen or decrement twice, including after a server restart.
 
-The demo starts with **$0.00 CAD revenue, 97 free pickups, 143 scans, 67.8% conversion, and 34 items on board**. These numbers are derived from seed transaction rows and inventory records. Conversion measures unique pickup sessions divided by scanned sessions; repeat pickups in one session increase units without counting another converted session. One scan is counted per robot per browser-tab session.
+**Recent Purchases** contains actual completed events, newest first, with product,
+price, time, and order ID. It shows five by default and up to twenty when expanded;
+all records remain in storage for metrics. A fresh installation has zero fake
+purchases and zero scans.
 
-**Stop**, **Resume**, **Return to Base**, and operator **Unlock Compartment** use the shared backend. A manual unlock automatically relocks without creating a purchase or reducing stock. Movement commands are blocked while a compartment is open. A stop takes priority over an in-flight resume. Failed locks stop the robot, keep the compartment reserved, and expose **Retry lock** to the operator.
+## Persistence and analytics
 
-## Architecture
+The replaceable `StateStorage` interface and `JsonStateStorage` implementation use
+**`data/state.json`** by default. Override with `VENDIGO_DATA_FILE`. The single JSON
+file holds the catalog, inventory, purchases (`state.transactions`), orders,
+visit identifiers, and analytics. Keep it when restarting or rebuilding.
+It is ignored by Git. Back it up when the app is stopped.
 
-Next.js 16 App Router, React, TypeScript, plain CSS, and one in-memory Node.js store. No separate backend service is needed.
+Writes use a uniquely named temporary file, flush it to disk, then atomically
+rename it over the state file. Purchases and stock are written in the same commit.
+Failed writes roll memory back and do not broadcast phantom sales. Corrupt state
+fails visibly instead of silently resetting inventory or purchase history.
 
-```text
-src/
-  app/
-    shop/[robotId]/          Customer route, resolves the QR's robot ID
-    dashboard/              Operator route
-    api/
-      state/                Snapshot + polling fallback
-      events/               Server-sent event stream
-      scans/                Idempotent scan registration
-      orders/[orderId]/      Order recovery and pickup status
-      robot/unlock/         Customer purchase/unlock
-      robot/command/        Operator controls
-      camera/               MJPEG proxy and configuration status
-  components/
-    storefront/             Catalog and purchase dialog
-    dashboard/              Metrics, inventory, sales, QR
-    robot/                  Robot status and controls
-    camera/                 Isolated live camera viewer
-  hooks/use-live-state.ts   Live snapshots with polling fallback
-  lib/
-    demo-data.ts            One consistent event seed
-    server/store.ts         Inventory, orders, timers, transactions
-    server/runtime.ts       Process-wide store shared by route handlers
-    robot/hardware.ts       Replaceable physical vehicle adapter
-    camera/config.ts        Server-only camera URL configuration
-  types/                    Robot, Product, InventoryItem, Transaction,
-                            VenueLocation, RobotCommand, and shared state
-public/
-  products/                 Replaceable local SVG product illustrations
-  robot.svg                 Vendigo illustration
-camera_code/                Original ESP32 firmware, preserved unchanged
-tests/                      Backend and browser verification
+Use **one long-lived Node process** with a writable local disk. This is intentionally
+not a multi-instance/serverless data store. Do not hand-edit the file while the
+server runs. If changing catalog names/prices/enabled flags manually, stop the
+server, edit `state.products` (prices are integer `priceCents`), and restart.
+Normal quantity edits use the dashboard and need no restart.
+
+The browser stores a stable session ID and a successful visit marker in
+`sessionStorage`. It retries failed visit registration. The server also persists
+visit IDs to deduplicate Strict Mode effects, refreshes, retries, and restarts.
+A new tab/browser session counts again. Purchase API calls do not fabricate scans.
+
+- **QR Scans:** recorded shop visits.
+- **Purchases:** completed purchase records.
+- **Revenue:** sum of recorded purchase amounts in cents.
+- **Conversion Rate:** purchases / scans × 100, or 0% when scans are zero.
+- **Total Items Remaining:** sum of inventory quantities.
+
+Repeat purchases in one visit can make conversion exceed 100%, by this definition.
+
+## Vendi voice and live inventory
+
+Vendi uses **Matilda**, ElevenLabs' adult American female voice with upbeat alto
+presentation, through the existing centralized `ELEVENLABS_VOICE_ID` setting in
+`.env.local` / `.env.example`. TTS keeps `eleven_flash_v2_5` and the existing
+natural, lightly expressive settings (stability 0.45, similarity 0.8, style 0.15,
+speed 1.05). There is no pitch shifting. Cached clips are keyed by voice/model/settings,
+so old male audio is not reused. Two self-references now say “snack guide.”
+
+The existing ElevenLabs Scribe STT, “Hey Vendi,” conversation history, GPT-5.6 Luna,
+and verified-order/seven-second dispensing knowledge remain in place.
+
+```bash
+python3 -m venv .venv-vendi
+.venv-vendi/bin/python -m pip install -r vendi/requirements.txt
+# Keep the web app running in another terminal, with existing API keys in .env.local.
+.venv-vendi/bin/python -m vendi.voice_demo --generate-clips
+.venv-vendi/bin/python -m vendi.voice_demo --check-providers
+.venv-vendi/bin/python -m vendi.voice_demo --live --command wake --mic
 ```
 
-The store publishes a complete snapshot after mutations. Both interfaces subscribe to `/api/events`; a three-second polling fallback keeps data moving when a proxy does not support event streams. Hardware acknowledgements control the order state. Money is stored as integer cents; all catalog prices are zero. Revenue charts and the sales feed are derived from the same transaction collection.
+For the existing roaming/wake-listening demo:
 
-**Run one long-lived Node.js process for this prototype.** State resets to seed data when the server restarts. It is intentionally not durable and should not be deployed across multiple serverless workers or instances. Timers survive browser disconnects, not process shutdowns. Before controlling real hardware, the robot must enforce its own physical auto-lock watchdog. The current app has no authentication and is intended for a trusted demo environment.
-
-Robot movement and battery telemetry are simulated; camera status reflects the connected feed. Robot IDs and location data remain internal to inventory, orders, hardware calls, and transactions, but locations and fleet numbers are not displayed in the UI. To add another demo robot, add its robot and inventory records to the seed; `/shop/[robotId]` already supports it. The dashboard focuses on the first robot while event metrics aggregate all transactions.
-
-## Robot hardware integration
-
-Set `LID_API_URL=https://vendi.yvesdonato.com/api/v1/lid` on the website server
-to enable the physical lid. Set `LID_API_KEY` to the dedicated lid API key on a
-hosted website; this laptop can read the existing `robot_code/lid-api.token`
-instead. These are server-only settings. Leave `LID_API_URL` empty for simulation.
-
-A confirmed purchase sends `{"state":"open"}`. After acknowledgement, the
-existing seven-second server timer sends `{"state":"closed"}` even if the browser
-is closed or refreshed. All catalog compartments share this robot's one lid.
-Failed close requests use the existing operator **Retry lock** flow and do not
-complete the sale. Position acknowledgements are commands, not physical sensor
-feedback. The website server, tunnel, and lid API must remain running; the timer
-does not survive a website-server restart.
-
-The shared adapter in [src/lib/robot/hardware.ts](src/lib/robot/hardware.ts)
-handles these operations (wheel commands remain simulated):
-
-```ts
-unlockCompartment(robotId, compartmentId)
-lockCompartment(robotId, compartmentId)
-stopRobot(robotId)
-resumeRobot(robotId)
-returnToBase(robotId)
+```bash
+.venv-vendi/bin/python -m vendi.voice_demo --live --command roam --wake-listening --duration 300
 ```
 
-Resolve a call only after the vehicle acknowledges it, and reject on errors or timeouts. Keep inventory, arbitration, and the order lifecycle in the store. All products are free; there is no payment step, Stripe integration, or charge.
+Live `ConversationAgent` defaults to `VendigoContext`. Before **every turn**, it
+fetches `/api/state` from `VENDIGO_APP_URL` (default `http://127.0.0.1:3000`);
+`--app-url` can override the URL. There is no startup inventory or session cache.
+Simple stock/price questions render validated current facts directly; GPT receives
+fresh structured context before more complex replies, and stock/price intents
+are rendered from that context rather than trusting model-written facts.
+Exact remaining quantities, sold-out items, and catalog prices are all shared
+with shop/admin. Failure to fetch produces “I'm having trouble checking stock
+right now” instead of stale or guessed stock.
 
-The customer endpoint accepts:
+The optional legacy `npm run voice` Speech Engine also reads fresh inventory on
+each model call and applies the same environment-selected voice to its configured
+engine at startup. It still requires `ELEVENLABS_SPEECH_ENGINE_ID`. The normal
+Python Vendi path does not require a Speech Engine. Full audio/device and
+conversation documentation is in [vendi/README.md](vendi/README.md).
 
-```http
-POST /api/robot/unlock
-Content-Type: application/json
+## QR codes and hardware
 
-{
-  "robotId": "robot-001",
-  "productId": "coke",
-  "compartmentId": 1,
-  "orderId": "a-unique-order-id",
-  "sessionId": "a-browser-session-id"
-}
-```
+Open the dashboard using your computer's reachable LAN address, then select
+**Shop QR** and download the PNG. Or set `NEXT_PUBLIC_SHOP_ORIGIN` to that address
+before starting/building. A QR containing `localhost` only works on that computer.
 
-`orderId` is the idempotency key; retries must preserve it and the other fields. Product-to-compartment mappings, availability, and stock are validated by the server. The response contains the order status and the absolute `closesAt` deadline. Relocking is server-owned and does not require a browser request.
-
-Operator commands use `POST /api/robot/command` with `robotId` and `command`: `stop`, `resume`, `return-to-base`, `unlock`, or `retry-lock`. `unlock` additionally requires `compartmentId`.
-
-## Camera integration
-
-The original camera implementation is preserved **byte for byte** in `camera_code/CameraWebServer_htn/`:
-
-| File | Preserved functionality |
-| --- | --- |
-| `CameraWebServer_htn.ino` | ESP32 camera initialization, Wi-Fi, sensor and PSRAM setup; active AI Thinker pin selection |
-| `app_httpd.cpp` | Camera HTTP endpoints, JPEG capture, controls, MJPEG streaming, and LED handling |
-| `camera_pins.h` | All existing board pin mappings |
-| `board_config.h` | Original alternative board configuration |
-| `camera_index.h` | Embedded camera control web UI |
-| `partitions.csv` | Firmware partition configuration |
-| `ci.yml` | Existing ESP32 build matrix |
-
-No camera hooks, React components, web API routes, or npm dependencies existed in the original application. The camera runs independently using the ESP32 Arduino camera/Wi-Fi libraries; the rebuild does not change its firmware dependencies or configuration.
-
-The firmware exposes its native control UI on port **80** and its MJPEG stream at **`http://CAMERA_IP:81/stream`**. Read the device’s IP from its existing serial output, and configure:
-
-```dotenv
-CAMERA_STREAM_URL=http://192.168.1.123:81/stream
-```
-
-Restart the app after setting the variable. **Live Robot Camera** uses a native MJPEG image element and proxies the stream through `/api/camera/stream`. The proxy preserves the multipart content type and frame bytes. Only the server-configured destination is accepted. A same-origin proxy avoids browser CORS and mixed-content problems; the **Next.js server** must still be able to reach the camera’s network.
-
-Without a configured camera, or when the stream fails, the dashboard shows a proper offline panel and **Reconnect camera**. It never substitutes a fake live feed. Camera status in the robot card follows the viewer. The camera code is checked against pre-rebuild SHA-256 hashes in the backend tests. Browser tests use an actual multipart JPEG fixture to verify the proxy, online state, offline behavior, and reconnect; physical hardware still needs an on-venue check.
+Hardware source, firmware, camera proxy routes, and legacy robot APIs remain
+isolated and preserved. They are not mounted in the active dashboard/shop.
+The **existing** lid adapter is retained: `LID_API_URL` and a server-side
+`LID_API_KEY` (or local token file) enable it. An empty `LID_API_URL` simulates the
+open/close acknowledgements. No new physical integration was added. Voice never
+commands the hardware. Active pickups resume their close timer after restart;
+an interrupted opening without a recorded acknowledgement is closed and marked
+failed, without inventing a purchase. Real hardware must retain its own watchdog
+while the website is offline. Preserved operator APIs can recover a failed lock;
+there are no robot-control buttons in this demo.
 
 ## Verification
 
@@ -171,27 +163,37 @@ Without a configured camera, or when the stream fails, the dashboard shows a pro
 npm run lint
 npm run typecheck
 npm test
+.venv-vendi/bin/python -m unittest discover -s tests -p 'test_vendi_*.py'
+python3 -m vendi.voice_demo --smoke
 npm run build
 npx playwright install chromium
 npm run test:e2e
 ```
 
-Browser tests start production instances on ports **3100/3101**, plus an isolated MJPEG fixture on **3102**, and shut them down afterward. They verify phone/desktop layouts, a purchase across separate browser sessions, page-reload recovery, tab-disconnect relocking, all related metrics, robot controls, manual unlocks, QR generation, invalid API requests, unknown robots, and camera reconnects. Screenshots are written to the ignored `test-results/` directory.
+Browser tests use isolated temporary JSON files and ports **3100/3120**, not your
+demo inventory. The restart test uses `.venv-vendi/bin/python`; set
+`VENDIGO_TEST_PYTHON` to another Python with `vendi/requirements.txt` installed if
+needed. Screenshots/traces go to ignored `test-results/`.
 
-## Project name
+Coverage includes manual edits, invalid quantities, sold-out/disabled products,
+concurrent shoppers, duplicate orders, revenue/conversion, corrupt/failed storage,
+restarting mid-pickup, and actual backend process restarts with Coke 5 → 5 → 4 → 4
+and seven persisted visits. Browser tests exercise mobile checkout, reload recovery,
+live Recent Purchases/metrics, inventory edits, QR, and absent admin/camera/robot UI.
+Voice tests verify fresh admin/purchase changes, exact quantities/prices, sold-out
+answers, unavailable storage, model runtime context, STT/TTS contracts, wake words,
+conversation history, and the seven-second guide.
 
-The website, metadata, package, and documentation use **Vendigo** (`vendigo` for the npm package name). The [GitHub repository](https://github.com/ericpungholee/Vendigo) is named **Vendigo**, and this checkout’s `origin` points to `git@github.com:ericpungholee/Vendigo.git`.
+Mocked by default: payment ($1 demo purchase; no real charge), physical lid acknowledgements when
+no lid URL is set, and offline `--smoke` voice/audio. Cloud speech/model calls require
+the existing API keys; microphone/speaker behavior depends on local devices.
 
-The local checkout directory and installed robot-service paths keep their existing filesystem names so the running app and hardware services continue working. Legacy internal session keys are retained for pickup recovery.
+The [implementation report](docs/demo-changes.md) lists every changed file and
+verification results. The opt-in real provider check is:
 
-## Robot voice and customer interaction
+```bash
+.venv-vendi/bin/python tests/verify_live_voice.py
+```
 
-The earlier voice server (`npm run voice`), voice and agent API routes, and
-agent modules are preserved alongside the storefront/dashboard. Their original
-React components remain available but are not mounted in the new dashboard.
-See [vendor audio](food_robot/README.md) and
-[customer interaction controller](food_robot/CUSTOMER_FLOW.md) for robot setup
-and simulation tests. The customer controller still needs live hardware adapters.
-
-Active audio assets are included under `food_robot/audio`; for a different
-checkout location, pass `--audio-dir ./food_robot/audio` to the vendor player.
+It starts an isolated production server on port 3135 and uses existing cloud API
+keys/credits; it does not change operator inventory or actuate physical hardware.

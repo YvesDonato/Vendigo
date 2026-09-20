@@ -1,14 +1,14 @@
 import { money, time } from "@/lib/format";
+import { metrics } from "@/lib/metrics";
 import type { AppSnapshot } from "@/types";
 
 export function Kpis({ state }: { state: AppSnapshot }) {
-  const revenue = state.transactions.reduce((sum, t) => sum + t.amountCents, 0);
-  const conversion = state.qrScans ? state.purchasingSessions / state.qrScans * 100 : 0;
+  const { revenueCents: revenue, conversion, purchases } = metrics(state);
   const values = [
     { label: "Revenue", value: money(revenue), id: "revenue" },
-    { label: "Units sold", value: state.transactions.length, id: "units" },
+    { label: "Purchases", value: purchases, id: "units" },
     { label: "QR scans", value: state.qrScans, id: "scans" },
-    { label: "Scan → purchase", value: `${conversion.toFixed(1)}%`, id: "conversion" },
+    { label: "Conversion rate", value: `${conversion.toFixed(1)}%`, id: "conversion" },
   ];
   return (
     <div className="kpi-grid">

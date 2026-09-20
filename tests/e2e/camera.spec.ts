@@ -1,24 +1,20 @@
 import { test, expect } from "@playwright/test";
 
-test("preserved MJPEG protocol streams through the proxy and handles an offline camera", async ({ page, request }) => {
-  await page.setViewportSize({ width: 1280, height: 1000 });
-  await page.setContent('<main style="background:#294932;color:#e4eeca;font:28px monospace;width:500px;height:280px;padding:30px">CAMERA INTEGRATION TEST<br><small>MJPEG frame · simulated ESP32</small></main>');
-  const jpeg = await page.locator("main").screenshot({ type: "jpeg" });
-  await request.post("http://127.0.0.1:3102/frame", { data: jpeg, headers: { "Content-Type": "image/jpeg" } });
-  await page.goto("http://127.0.0.1:3101/dashboard");
-  const camera = page.getByRole("img", { name: "Live onboard camera feed" });
-  await expect(camera).toBeVisible();
-  await expect(page.getByText("Feed connected", { exact: true })).toBeVisible();
-  await expect(page.locator(".robot-vitals").getByText("Online", { exact: true })).toBeVisible();
-  expect(await camera.evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
-  await page.locator("#camera").screenshot({ path: "test-results/camera-stream-test.png" });
-  await request.post("http://127.0.0.1:3102/offline");
-  const offline = await request.get("http://127.0.0.1:3101/api/camera/stream");
-  expect(offline.status()).toBe(502);
-  await page.reload();
-  await expect(page.getByText("Camera offline", { exact: true })).toBeVisible();
-  await expect(page.locator(".robot-vitals").getByText("Offline", { exact: true })).toBeVisible();
-  await request.post("http://127.0.0.1:3102/frame", { data: jpeg, headers: { "Content-Type": "image/jpeg" } });
-  await page.getByRole("button", { name: "Reconnect camera" }).click();
-  await expect(page.getByText("Feed connected", { exact: true })).toBeVisible();
+test("shop and dashboard have no active camera or robot controls; shop exposes no admin navigation", async ({ page }) => {
+  const unwantedRequests: string[] = [];
+  page.on("request", (request) => {
+    if (/\/api\/(camera|robot\/command)/.test(request.url())) unwantedRequests.push(request.url());
+  });
+  for (const route of ["/shop", "/shop/robot-001", "/dashboard"]) {
+    await page.goto(route);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.locator("video")).toHaveCount(0);
+    await expect(page.getByText(/camera|robot controls|motor controls|servo controls/i)).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^(forward|backward|left|right|stop|resume|return to base|unlock compartment)$/i })).toHaveCount(0);
+    if (route.startsWith("/shop")) {
+      await expect(page.locator('a[href*="dashboard"], a[href*="admin"]')).toHaveCount(0);
+      await expect(page.getByText(/Recent Purchases|Revenue|Save Inventory|QR scans/i)).toHaveCount(0);
+    }
+  }
+  expect(unwantedRequests).toEqual([]);
 });

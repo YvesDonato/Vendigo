@@ -1,0 +1,7 @@
+# Optional for offline demo/tests; install these for real audio and cloud services.
+httpx>=0.27,<1
+openai>=2,<3
+python-dotenv>=1,<2
+sounddevice>=0.5,<1
+vosk>=0.3.44,<0.4
+websockets>=14,<16

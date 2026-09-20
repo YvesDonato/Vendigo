@@ -21,3 +21,13 @@ robot_code/cloudflare-tunnel.token
 robot_code/.cloudflared-bin
 robot_code/backboard.key
 robot_code/__pycache__/
+
+# Vendi local dependencies, generated voices, and transient speech cache
+.venv-vendi/
+.vendi-cache/
+__pycache__/
+*.pyc
+vendi/audio/clips/*/
+
+# Persistent local demo state (never commit customer events).
+/data/

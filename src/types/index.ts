@@ -16,6 +16,7 @@ export interface Product {
   image: string;
   color: string;
   category: "drinks" | "snacks";
+  enabled?: boolean;
 }
 
 export interface InventoryItem {
@@ -32,6 +33,7 @@ export interface Transaction {
   productId: string;
   locationId: string;
   amountCents: number;
+  productName?: string;
   createdAt: string;
 }
 
@@ -54,6 +56,7 @@ export interface Order {
   locationId: string;
   status: OrderStatus;
   closesAt: number | null;
+  openedAt?: number;
   error: string | null;
 }
 
