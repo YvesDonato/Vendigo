@@ -12,6 +12,8 @@ export class AppError extends Error {
   }
 }
 
+export interface PurchaseInput { orderId: string; robotId: string; productId: string; compartmentId: number; sessionId: string }
+
 export class DemoStore {
   private readonly serverInstanceId = randomUUID();
   private state = createSeed();
@@ -26,17 +28,19 @@ export class DemoStore {
   private duration: number;
   private storage?: StateStorage;
   private checkpoint: StoredState;
+  private automaticClose: boolean;
 
-  constructor(hardware = robotHardware, unlockDurationMs = 7_000, storage?: StateStorage) {
+  constructor(hardware = robotHardware, unlockDurationMs = 7_000, storage?: StateStorage, automaticClose = true) {
     this.hardware = hardware;
     this.duration = unlockDurationMs;
     this.storage = storage;
+    this.automaticClose = automaticClose;
     const saved = storage?.load();
     if (saved) this.restore(saved);
     this.checkpoint = this.serialize();
     if (!saved) storage?.save(this.checkpoint);
     // Resume server-owned closing after restart; never send a second open command.
-    for (const order of this.orders.values()) {
+    for (const order of automaticClose ? this.orders.values() : []) {
       if (["completed", "failed"].includes(order.status)) continue;
       this.busy.add(order.robotId);
       if (order.status === "lock_failed") continue;
@@ -77,6 +81,7 @@ export class DemoStore {
   }
 
   private scheduleClose(id: string, delay: number) {
+    if (!this.automaticClose) return;
     const timer = setTimeout(() => {
       this.timers.delete(timer);
       void this.close(id).catch((error) => console.error("Vendigo could not persist pickup completion", error));
@@ -153,14 +158,21 @@ export class DemoStore {
     return structuredClone(order);
   }
 
-  async purchase(input: { orderId: string; robotId: string; productId: string; compartmentId: number; sessionId: string }) {
+  async purchase(input: PurchaseInput) {
+    const reservation = this.reservePurchase(input);
+    return reservation.created ? this.unlock(reservation.order.id) : reservation.order;
+  }
+
+  // Pure durable transitions are also used inside Blob compare-and-swap commits.
+  // Hardware calls run only after the reservation has committed successfully.
+  reservePurchase(input: PurchaseInput) {
     this.refresh();
     const previous = this.orders.get(input.orderId);
     if (previous) {
       if (previous.robotId !== input.robotId || previous.productId !== input.productId || previous.sessionId !== input.sessionId || previous.compartmentId !== input.compartmentId) {
         throw new AppError("This order reference is already in use.", 409);
       }
-      return structuredClone(previous);
+      return { order: structuredClone(previous), created: false };
     }
     const robot = this.robot(input.robotId);
     if (robot.status !== "available" || this.busy.has(robot.id)) throw new AppError("Vendigo is busy right now. Please try again in a moment.", 409);
@@ -169,30 +181,58 @@ export class DemoStore {
     if (this.state.products.find((p) => p.id === input.productId)?.enabled === false) throw new AppError("That product is unavailable.", 409);
     if (item.stock < 1) throw new AppError("That item just sold out. Please choose another.", 409);
     const product = this.state.products.find((p) => p.id === input.productId)!;
-    return this.open({ id: input.orderId, robotId: robot.id, productId: input.productId, productName: product.name, amountCents: product.priceCents, compartmentId: input.compartmentId, sessionId: input.sessionId, locationId: robot.locationId, status: "opening", closesAt: null, error: null });
+    const order: Order = { id: input.orderId, robotId: robot.id, productId: input.productId, productName: product.name, amountCents: product.priceCents, compartmentId: input.compartmentId, sessionId: input.sessionId, locationId: robot.locationId, status: "opening", closesAt: null, error: null, operationExpiresAt: Date.now() + 30_000 };
+    this.reserveOrder(order);
+    return { order: structuredClone(order), created: true };
   }
 
-  private async open(order: Order) {
+  private reserveOrder(order: Order) {
     const robot = this.robot(order.robotId);
     this.busy.add(robot.id);
     this.orders.set(order.id, order);
     if (robot.status !== "stopped") robot.status = "selling";
     this.publish();
+  }
+
+  private async open(order: Order) {
+    this.reserveOrder(order);
+    return this.unlock(order.id);
+  }
+
+  private async unlock(id: string) {
+    const order = this.orders.get(id)!;
     try {
-      await this.hardware.unlockCompartment(robot.id, order.compartmentId);
+      await this.hardware.unlockCompartment(order.robotId, order.compartmentId);
     } catch {
-      order.status = "failed";
-      order.error = "We couldn’t unlock the compartment. Please try again.";
-      this.busy.delete(robot.id);
-      if (robot.status === "selling") robot.status = "available";
-      this.publish();
-      return structuredClone(order);
+      return this.failUnlock(id);
     }
+    return this.acknowledgeUnlock(id);
+  }
+
+  failUnlock(id: string) {
+    this.refresh();
+    const order = this.orders.get(id)!;
+    if (order.status !== "opening") return structuredClone(order);
+    order.status = "failed";
+    order.error = "We couldn’t unlock the compartment. Please try again.";
+    delete order.operationExpiresAt;
+    this.busy.delete(order.robotId);
+    const robot = this.robot(order.robotId);
+    if (robot.status === "selling") robot.status = "available";
+    this.publish();
+    return structuredClone(order);
+  }
+
+  acknowledgeUnlock(id: string) {
+    this.refresh();
+    const order = this.orders.get(id)!;
+    if (order.status !== "opening") return structuredClone(order);
     const acknowledged = { ...order, status: "unlocked" as const, openedAt: Date.now(), closesAt: Date.now() + this.duration };
     this.scheduleClose(order.id, this.duration);
     try {
       this.refresh();
       Object.assign(order, acknowledged);
+      delete order.operationExpiresAt;
       this.publish();
     }
     catch (error) {
@@ -202,6 +242,31 @@ export class DemoStore {
       throw error;
     }
     return structuredClone(order);
+  }
+
+  beginClose(id: string) {
+    this.refresh();
+    const order = this.orders.get(id);
+    if (!order || ["completed", "failed"].includes(order.status)) return null;
+    if (["opening", "locking"].includes(order.status) && (order.operationExpiresAt ?? 0) > Date.now()) return null;
+    if (order.status === "unlocked" && (order.closesAt ?? 0) > Date.now()) return null;
+    order.status = "locking";
+    order.operationExpiresAt = Date.now() + 30_000;
+    this.publish();
+    return structuredClone(order);
+  }
+
+  finishClose(id: string, lease: number, failed = false) {
+    this.refresh();
+    const order = this.orders.get(id);
+    if (!order || order.status !== "locking" || order.operationExpiresAt !== lease) return;
+    delete order.operationExpiresAt;
+    if (failed) {
+      order.status = "lock_failed";
+      order.error = "The compartment could not relock. Please ask the operator for help.";
+      this.robot(order.robotId).status = "stopped";
+      this.publish();
+    } else this.completePurchase(order);
   }
 
   async close(id: string) {

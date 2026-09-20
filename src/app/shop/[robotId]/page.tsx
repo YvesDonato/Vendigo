@@ -7,6 +7,6 @@ export const metadata = { title: "Your little break" };
 
 export default async function ShopPage({ params }: { params: Promise<{ robotId: string }> }) {
   const { robotId } = await params;
-  if (!getStore().snapshot().robots.some((robot) => robot.id === robotId)) notFound();
+  if (!(await getStore().snapshot()).robots.some((robot) => robot.id === robotId)) notFound();
   return <Storefront robotId={robotId} />;
 }

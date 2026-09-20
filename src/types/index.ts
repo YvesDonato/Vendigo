@@ -59,6 +59,8 @@ export interface Order {
   status: OrderStatus;
   closesAt: number | null;
   openedAt?: number;
+  // Durable lease for an in-flight hardware acknowledgement on serverless hosts.
+  operationExpiresAt?: number;
   error: string | null;
 }
 

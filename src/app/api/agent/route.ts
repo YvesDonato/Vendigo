@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { runAgent, type ChatMessage } from "@/agent/run-agent";
+import { inventoryFromSnapshot } from "@/agent/live-inventory";
+import { getStore } from "@/lib/server/runtime";
 
 const isChatMessage = (value: unknown): value is ChatMessage => {
   if (!value || typeof value !== "object") return false;
@@ -31,6 +33,7 @@ export async function POST(request: Request) {
     const result = await runAgent({
       messages: messages.slice(-30),
       signal: request.signal,
+      inventorySource: async () => inventoryFromSnapshot(await getStore().snapshot()),
     });
     return NextResponse.json(result);
   } catch (error) {

@@ -5,6 +5,6 @@ export const dynamic = "force-dynamic";
 export async function GET(_request: Request, context: { params: Promise<{ orderId: string }> }) {
   try {
     const { orderId } = await context.params;
-    return Response.json(getStore().getOrder(orderId), { headers: { "Cache-Control": "no-store" } });
+    return Response.json(await getStore().getOrder(orderId), { headers: { "Cache-Control": "no-store" } });
   } catch (error) { return errorResponse(error); }
 }

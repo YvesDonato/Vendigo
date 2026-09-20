@@ -26,6 +26,7 @@ export type RunAgentOptions = {
   messages: ChatMessage[];
   signal?: AbortSignal;
   onToolEvent?: (event: ToolEvent) => void | Promise<void>;
+  inventorySource?: typeof getLiveInventory;
 };
 
 const MAX_TOOL_LOOPS = 8;
@@ -34,6 +35,7 @@ export async function runAgent({
   messages,
   signal,
   onToolEvent,
+  inventorySource = getLiveInventory,
 }: RunAgentOptions): Promise<AgentResult> {
   const openai = getOpenAI();
   const input: ResponseInputItem[] = messages.map((message) => ({
@@ -45,7 +47,7 @@ export async function runAgent({
   for (let iteration = 0; iteration < MAX_TOOL_LOOPS; iteration += 1) {
     signal?.throwIfAborted();
     let inventory;
-    try { inventory = await getLiveInventory(signal); }
+    try { inventory = await inventorySource(signal); }
     catch {
       signal?.throwIfAborted();
       return { message: "I'm having trouble checking stock right now. Please try again in a moment.", events };

@@ -10,17 +10,21 @@ export function useLiveState() {
 
   useEffect(() => {
     let active = true;
+    let polling = false;
     const accept = (snapshot: AppSnapshot) => {
       if (!active) return;
       setState((current) => !current || snapshot.serverInstanceId !== current.serverInstanceId || snapshot.startedAt !== current.startedAt || snapshot.revision >= current.revision ? snapshot : current);
       setError(false);
     };
     const poll = async () => {
+      if (polling || !active) return;
+      polling = true;
       try {
         const response = await fetch("/api/state", { cache: "no-store", signal: AbortSignal.timeout(8_000) });
         if (!response.ok) throw new Error();
         accept(await response.json());
       } catch { if (active) setError(true); }
+      finally { polling = false; }
     };
     const events = new EventSource("/api/events");
     events.onmessage = (event) => {

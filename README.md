@@ -31,6 +31,59 @@ The shop has no admin link, camera, robot controls, settings, or admin metrics.
 The internal dashboard has inventory, purchases, revenue, conversion, and Shop QR.
 It deliberately has no authentication; run it in a trusted demo environment.
 
+## Deploy on Vercel
+
+In **Vercel → Vendigo → Storage**, create/connect a **private Blob store** to the
+project's Production environment (and Preview if used). Vercel supplies the
+server-only `BLOB_READ_WRITE_TOKEN`. Redeploy after connecting it. No database or
+separate server is needed. Do not set `VENDIGO_STORAGE=json` on Vercel.
+
+Vercel automatically uses `BlobStateStorage` instead of writing `/var/task/data`.
+The authoritative object is **`vendigo/production/state.json`**, containing:
+
+```json
+{
+  "version": 1,
+  "inventory": { "products": [] },
+  "purchases": { "purchases": [], "orders": [] },
+  "analytics": {
+    "qr_scans": 0, "visit_ids": [], "buyer_ids": [], "revision": 0,
+    "started_at": "ISO timestamp", "robots": [], "locations": []
+  }
+}
+```
+
+The arrays above illustrate the structure; first use seeds the seven $1 snacks
+listed below. Inventory, orders, purchases, and analytics commit as **one JSON
+object**, so a sale cannot write stock without its purchase record. Every read
+uses Blob `get(..., { access: "private", useCache: false })`. Conditional writes
+use the previous ETag (`ifMatch`); conflicting operations reread and retry. A racing
+cold start cannot reset existing data. Errors never fall back to `/tmp`, memory,
+or a fresh catalog. Preview deployments use `vendigo/preview/state.json` and do
+not touch production. `VENDIGO_BLOB_PATH` optionally selects another object.
+
+Use the same `/dashboard` inventory editor and `/shop` customer route. On Vercel,
+open pages poll current shared state every second; local development also retains
+SSE. The seven-second pickup uses Next's `after()` to keep the request alive after
+the response. Durable order leases let subsequent requests recover an interrupted
+function without reopening a compartment or recording a duplicate purchase.
+Real lid acknowledgements still use `LID_API_URL` / `LID_API_KEY` if configured;
+an empty URL retains the demo simulation. Robot movement APIs stay local-only.
+
+The deployed web agent reads the same store directly on each model turn. For
+Python Vendi or the standalone voice server running on your laptop, point
+`VENDIGO_APP_URL` at the **public Vercel site**, not the separate local shop:
+
+```bash
+VENDIGO_APP_URL=https://your-project.vercel.app .venv-vendi/bin/python -m vendi.voice_demo --live --command wake --mic
+```
+
+Local `data/*.json` files remain independent and are not uploaded automatically.
+Your saved laptop sales/stock are preserved locally. The hosted catalog starts
+with the supplied 16-item list; edit hosted stock from the hosted dashboard.
+To deliberately use the Blob backend locally, set `VENDIGO_STORAGE=blob` and
+the Blob credentials in `.env.local` (use a separate `VENDIGO_BLOB_PATH` for tests).
+
 ## Inventory and purchases
 
 Open `/dashboard`, type exact whole-number quantities in **Inventory**, and select
@@ -70,8 +123,9 @@ no card is charged. Existing purchase records retain their original amounts.
 
 `POST /api/purchases` is the customer purchase route. The preserved
 `/api/robot/unlock` compatibility route calls the same handler/store function.
-`GET /api/orders/[orderId]` only reads status; success-page refreshes never mutate
-stock. Order IDs, original request fields, and completed orders persist, so
+`GET /api/orders/[orderId]` reads durable status; on Vercel it also recovers an
+overdue pickup if its original function was interrupted. Success-page refreshes
+never create another purchase. Order IDs, original request fields, and completed orders persist, so
 retries cannot reopen or decrement twice, including after a server restart.
 
 **Recent Purchases** contains actual completed events, newest first, with product,
@@ -102,8 +156,8 @@ an interrupted replacement is replayed before the next read. A durable purchase
 cannot become detached from its stock decrement. Writes that fail before the
 commit roll memory back. Corrupt JSON fails visibly instead of resetting data.
 
-Use **one long-lived Node process** with a writable local disk. This is intentionally
-not a multi-instance/serverless data store. Dashboard edits are the easiest way
+For **local JSON mode**, use one long-lived Node process with a writable local
+disk. Vercel uses the shared Blob mode described above. Dashboard edits are the easiest way
 to manage stock. You can also edit `products[].inventory`, `price` (dollars, up to
 two decimals), or `enabled` directly in **`data/inventory.json`** while the server
 runs. The next API/voice query reads the saved file; open pages update within

@@ -18,15 +18,46 @@ export interface StateStorage {
   load(): StoredState | null;
   save(data: StoredState): void;
 }
-interface Documents {
+export interface Documents {
   inventory: InventoryDocument;
   purchases: PurchaseDocument;
   analytics: AnalyticsDocument;
 }
 
-function validateDocuments(value: unknown): asserts value is Documents {
+export function validateDocuments(value: unknown): asserts value is Documents {
   if (!object(value)) throw new Error("Invalid storage transaction.");
   validateInventory(value.inventory); validatePurchases(value.purchases); validateAnalytics(value.analytics);
+}
+
+export function fromDocuments(documents: Documents): StoredState {
+  validateDocuments(documents);
+  const { inventory, purchases, analytics } = documents;
+  return {
+    version: 1,
+    state: {
+      revision: analytics.revision, startedAt: analytics.started_at, robots: analytics.robots,
+      ...InventoryStore.toSnapshot(inventory), locations: analytics.locations,
+      transactions: PurchaseStore.toTransactions(purchases), activeOrders: [],
+      qrScans: analytics.qr_scans, purchasingSessions: analytics.buyer_ids.length,
+    },
+    orders: purchases.orders, sessions: analytics.visit_ids, buyers: analytics.buyer_ids,
+  };
+}
+
+export function toDocuments(data: StoredState): Documents {
+  const documents: Documents = {
+    inventory: InventoryStore.fromSnapshot(data.state.products, data.state.inventory),
+    purchases: {
+      purchases: data.state.transactions.map((p) => ({ order_id: p.id, product_id: p.productId,
+        product_name: p.productName ?? data.state.products.find((product) => product.id === p.productId)?.name ?? p.productId,
+        price: p.amountCents / 100, timestamp: p.createdAt, robot_id: p.robotId, location_id: p.locationId })),
+      orders: data.orders,
+    },
+    analytics: { qr_scans: data.state.qrScans, visit_ids: data.sessions, buyer_ids: data.buyers,
+      revision: data.state.revision, started_at: data.state.startedAt, robots: data.state.robots, locations: data.state.locations },
+  };
+  validateDocuments(documents);
+  return documents;
 }
 
 /** Three authoritative documents with a small recovery journal for multi-file commits.
@@ -79,32 +110,12 @@ export class JsonStateStorage implements StateStorage {
     const purchases = this.purchases.read();
     const analytics = this.analytics.read();
     this.initialized = true;
-    return {
-      version: 1,
-      state: {
-        revision: analytics.revision, startedAt: analytics.started_at, robots: analytics.robots,
-        ...InventoryStore.toSnapshot(inventory), locations: analytics.locations,
-        transactions: PurchaseStore.toTransactions(purchases), activeOrders: [],
-        qrScans: analytics.qr_scans, purchasingSessions: analytics.buyer_ids.length,
-      },
-      orders: purchases.orders, sessions: analytics.visit_ids, buyers: analytics.buyer_ids,
-    };
+    return fromDocuments({ inventory, purchases, analytics });
   }
 
   save(data: StoredState) {
     this.recover();
-    const documents: Documents = {
-      inventory: InventoryStore.fromSnapshot(data.state.products, data.state.inventory),
-      purchases: {
-        purchases: data.state.transactions.map((p) => ({ order_id: p.id, product_id: p.productId,
-          product_name: p.productName ?? data.state.products.find((product) => product.id === p.productId)?.name ?? p.productId,
-          price: p.amountCents / 100, timestamp: p.createdAt, robot_id: p.robotId, location_id: p.locationId })),
-        orders: data.orders,
-      },
-      analytics: { qr_scans: data.state.qrScans, visit_ids: data.sessions, buyer_ids: data.buyers,
-        revision: data.state.revision, started_at: data.state.startedAt, robots: data.state.robots, locations: data.state.locations },
-    };
-    validateDocuments(documents);
+    const documents = toDocuments(data);
     // The journal is the commit decision. Interrupted replacements are replayed
     // before any subsequent read, so a purchase cannot leave stock half-updated.
     writeJson(this.journalPath, documents);

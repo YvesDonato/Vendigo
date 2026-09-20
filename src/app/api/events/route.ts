@@ -1,5 +1,6 @@
 import { getStore } from "@/lib/server/runtime";
 import { errorResponse } from "@/lib/server/http";
+import { BlobStore } from "@/lib/server/blob-store";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -7,7 +8,13 @@ export const runtime = "nodejs";
 export function GET(request: Request) {
   let store;
   let initial;
-  try { store = getStore(); initial = store.snapshot(); }
+  try {
+    const backend = getStore();
+    // SSE subscribers in different Vercel instances cannot share a process.
+    // 204 tells EventSource to stop reconnecting; the existing live poll remains.
+    if (backend instanceof BlobStore) return new Response(null, { status: 204, headers: { "Cache-Control": "no-store" } });
+    store = backend; initial = store.snapshot();
+  }
   catch (error) { return errorResponse(error); }
   const encoder = new TextEncoder();
   let cleanup = () => {};
